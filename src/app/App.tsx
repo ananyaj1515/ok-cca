@@ -2118,13 +2118,13 @@ function HomeTab({
         <div>
           <p
             className="text-sm font-bold leading-tight mb-0.5"
-            style={{ color: "rgba(255,255,255,0.72)" }}
+            style={{ color: "rgba(255,255,255,0.88)" }}
           >
             {isReturning ? "Welcome back," : "Hello,"}
           </p>
           <p
             className="text-xl font-black leading-tight"
-            style={{ color: WHITE }}
+            style={{ color: FWHITE }}
           >
             {username}!
           </p>
@@ -3312,7 +3312,7 @@ function WishlistTab({
         style={{ backgroundColor: "rgb(218, 106, 104)" }}
       >
         <div>
-          <h1 className="text-xl font-black" style={{ color: WHITE }}>
+          <h1 className="text-xl font-black" style={{ color: FWHITE }}>
             My Wishlist
           </h1>
           <p
@@ -4386,7 +4386,7 @@ function EventsTab({
         style={{ backgroundColor: "rgb(218, 106, 104)" }}
       >
         <div>
-          <h1 className="text-xl font-black" style={{ color: WHITE }}>
+          <h1 className="text-xl font-black" style={{ color: FWHITE }}>
             Events
           </h1>
           <p className="text-sm" style={{ color: "rgba(255,255,255,0.78)" }}>
@@ -4872,7 +4872,7 @@ function EventsTab({
             <button
               onClick={() => setFilterOpen(false)}
               className="w-full py-3.5 rounded-2xl text-sm font-black"
-              style={{ backgroundColor: PLUM, color: FWHITE }}
+              style={{ backgroundColor: CORAL, color: PLUM }}
             >
               Apply Filters
               {activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
@@ -5934,7 +5934,7 @@ function ProfileTab({
           className="px-5 pt-14 pb-4"
           style={{ backgroundColor: "rgb(218, 106, 104)" }}
         >
-          <h1 className="text-xl font-black" style={{ color: WHITE }}>
+          <h1 className="text-xl font-black" style={{ color: FWHITE }}>
             Profile
           </h1>
         </div>
@@ -7226,7 +7226,7 @@ function ReportPage({
         </div>
         <button
           className="w-full py-3.5 rounded-2xl font-black text-sm active:scale-[0.98] transition-transform"
-          style={{ backgroundColor: PLUM, color: FWHITE }}
+          style={{ backgroundColor: CORAL, color: PLUM }}
           onClick={backFn}
         >
           Back to CCA Profile
@@ -7324,7 +7324,7 @@ function ReportPage({
       />
       <button
         className="w-full py-3.5 rounded-2xl font-black text-sm active:scale-[0.98] transition-transform"
-        style={{ backgroundColor: PLUM, color: FWHITE }}
+        style={{ backgroundColor: CORAL, color: PLUM }}
         onClick={handleSubmit}
       >
         Submit Report
@@ -7995,7 +7995,7 @@ function CcaDetailPage({
           onClick={goBack}
           aria-label="Back to CCA list"
           className="absolute top-3 left-3 z-10 w-9 h-9 flex items-center justify-center rounded-xl shadow-sm"
-          style={{ backgroundColor: "rgba(255,255,255,0.88)" }}
+          style={{ backgroundColor: CARD_OVERLAY }}
         >
           <ChevronLeft size={18} color={PLUM} strokeWidth={2.5} />
         </button>
