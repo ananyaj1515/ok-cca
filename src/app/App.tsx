@@ -5956,9 +5956,18 @@ function ProfileTab({
                   );
                 })
               ) : (
-                <span className="text-xs" style={{ color: MUTED }}>
-                  No interests selected yet
-                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowRefine(true)}
+                  className="text-xs font-bold px-3 py-1.5 rounded-full active:opacity-70 transition-opacity"
+                  style={{
+                    backgroundColor: WHITE,
+                    color: MUTED,
+                    border: `1.5px dashed ${BORDER}`,
+                  }}
+                >
+                  No interests yet
+                </button>
               )}
               {commitmentLevel && (
                 <button
@@ -5993,8 +6002,7 @@ function ProfileTab({
             </p>
             {memberships.length === 0 ? (
               <p className="text-xs" style={{ color: MUTED }}>
-                No memberships added yet. Update during onboarding or via
-                Preferences.
+                No memberships added yet.
               </p>
             ) : (
               <div className="space-y-2">
