@@ -5527,9 +5527,7 @@ function ManageAccountPage({
               onPress={() => setShowNotifSettings(true)}
               right={
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold" style={{ color: MUTED }}>
-                    Off
-                  </span>
+                 
                   <ChevronRight size={15} color={MUTED} />
                 </div>
               }
