@@ -5,7 +5,7 @@ import {
   Pencil, X, Zap, Flame, Sprout, Star, Camera,
   MessageSquare, ThumbsUp, ThumbsDown, Flag, Plus, ArrowRight, Reply,
   Info, HelpCircle, AlertTriangle,
-  MoreVertical, ListPlus, Trash2
+  MoreVertical, ListPlus, Trash2, Hand, SearchX, Funnel
 } from "lucide-react";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import noBgLogo from "@/imports/nobglogo.png";
@@ -324,9 +324,9 @@ function CcaCardSmall({ cca, saved, onSave, onClick }: { cca:CCA; saved:boolean;
         <button
           onClick={e => { e.stopPropagation(); onSave(); }}
           className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-colors"
-          style={{ backgroundColor: saved ? CORAL : "rgba(0,0,0,0.42)" }}
+          style={{ backgroundColor: saved ? CARD_OVERLAY : "rgba(0,0,0,0.42)" }}
         >
-          <Heart size={13} fill={saved ? FWHITE : "none"} color={FWHITE} strokeWidth={2} />
+          <Heart size={13} fill={saved ? CORAL : "none"} color={saved ? CORAL : FWHITE} strokeWidth={2} />
         </button>
       </div>
       <div className="p-2.5">
@@ -343,15 +343,15 @@ function CcaCardSmall({ cca, saved, onSave, onClick }: { cca:CCA; saved:boolean;
 
 function CcaCardGrid({ cca, saved, onSave, onClick }: { cca:CCA; saved:boolean; onSave:()=>void; onClick?:()=>void }) {
   return (
-    <div className="rounded-2xl overflow-hidden shadow-sm cursor-pointer active:scale-[0.97] transition-transform" style={{ backgroundColor:CREAM }} onClick={onClick}>
+    <div className="rounded-2xl overflow-hidden shadow-sm cursor-pointer active:scale-[0.97] transition-transform" style={{ backgroundColor:WHITE }} onClick={onClick}>
       <div className="h-28 relative overflow-hidden" style={{ backgroundColor:cca.bgColor }}>
         <img src={cca.img} alt={cca.name} className="absolute inset-0 w-full h-full object-cover" />
         <button
           onClick={e => { e.stopPropagation(); onSave(); }}
           className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-          style={{ backgroundColor: saved ? CORAL : "rgba(0,0,0,0.42)" }}
+          style={{ backgroundColor: saved ? CARD_OVERLAY : "rgba(0,0,0,0.42)" }}
         >
-          <Heart size={15} fill={saved ? FWHITE : "none"} color={FWHITE} strokeWidth={2} />
+          <Heart size={15} fill={saved ? CORAL : "none"} color={saved ? CORAL : FWHITE} strokeWidth={2} />
         </button>
       </div>
       <div className="p-3">
@@ -407,6 +407,66 @@ function BackBtn({ onPress }: { onPress:()=>void }) {
       <ChevronLeft size={20} strokeWidth={2.5} />
     </button>
   );
+}
+
+const COLLAPSE_MS = 300;
+
+function CollapsingItem({ children, exiting }: { children: React.ReactNode; exiting?: boolean }) {
+  const innerRef = React.useRef<HTMLDivElement>(null);
+  const [fromHeight, setFromHeight] = React.useState<number | null>(null);
+  const [collapsed, setCollapsed] = React.useState(false);
+
+  React.useLayoutEffect(() => {
+    if (!exiting) {
+      setFromHeight(null);
+      setCollapsed(false);
+      return;
+    }
+    setFromHeight(innerRef.current?.getBoundingClientRect().height ?? 0);
+    setCollapsed(false);
+  }, [exiting]);
+
+  React.useEffect(() => {
+    if (!exiting || fromHeight === null) return;
+    const id = requestAnimationFrame(() => setCollapsed(true));
+    return () => cancelAnimationFrame(id);
+  }, [exiting, fromHeight]);
+
+  return (
+    <div
+      aria-hidden={exiting || undefined}
+      style={{
+        height: exiting ? (collapsed ? 0 : fromHeight ?? undefined) : undefined,
+        opacity: exiting && collapsed ? 0 : 1,
+        overflow: exiting ? "hidden" : undefined,
+        pointerEvents: exiting ? "none" : undefined,
+        transition: exiting && fromHeight !== null
+          ? `height ${COLLAPSE_MS}ms ease-out, opacity ${COLLAPSE_MS}ms ease-out`
+          : undefined,
+      }}
+    >
+      <div ref={innerRef} style={{ paddingBottom: 12 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function withExitingItems<T>(
+  live: T[],
+  exiting: { item: T; index: number }[],
+  idOf: (t: T) => number | string,
+): { item: T; exiting: boolean }[] {
+  const liveIds = new Set(live.map(idOf));
+  const result: { item: T; exiting: boolean }[] = live.map(item => ({ item, exiting: false }));
+  exiting
+    .filter(e => !liveIds.has(idOf(e.item)))
+    .slice()
+    .sort((a, b) => a.index - b.index)
+    .forEach(({ item, index }) => {
+      result.splice(Math.min(Math.max(index, 0), result.length), 0, { item, exiting: true });
+    });
+  return result;
 }
 
 // ─── Status bar ──────────────────────────────────────────────────────────────
@@ -545,7 +605,7 @@ function WelcomeScreen({ onGetStarted }: { onGetStarted:()=>void }) {
       {/* Logo */}
       <div className="px-6 pt-3 pb-1 flex items-center gap-3">
         <ImageWithFallback src={noBgLogo} alt="ok!cca" className="w-12 h-12 object-contain" />
-        <h1 className="text-3xl font-black tracking-tight leading-none" style={{ color:PLUM }}>ok!cca</h1>
+        <h1 className="text-3xl font-black tracking-wide"><span style={{ color:PLUM }}>ok!</span><span style={{ color:CORAL }}>cca</span></h1>
       </div>
 
       {/* Swipeable center — slides + dots grouped, vertically centered */}
@@ -648,7 +708,7 @@ function SignInScreen({ onSignIn, onBack }: { onSignIn:(email:string)=>void; onB
           <div className="w-36 h-36 rounded-3xl flex items-center justify-center shadow-md overflow-hidden" style={{ backgroundColor:CREAM, border:`2px solid ${BORDER}` }}>
             <ImageWithFallback src={noBgLogo} alt="ok!cca" className="w-32 h-32 object-contain" />
           </div>
-          <h1 className="text-3xl font-black tracking-tight"><span style={{ color:PLUM }}>ok!</span><span style={{ color:CORAL }}>cca</span></h1>
+          <h1 className="text-3xl font-black tracking-wide"><span style={{ color:PLUM }}>ok!</span><span style={{ color:CORAL }}>cca</span></h1>
         </div>
 
         {/* Form */}
@@ -753,7 +813,7 @@ function OnboardNusScreen({ onNext, onBack }: { onNext:(memberships:number[])=>v
       <div className="px-5 pt-1 mb-5"><BackBtn onPress={onBack} /></div>
 
       <div className="flex-1 px-6 overflow-y-auto" style={hideScroll}>
-        <p className="text-3xl font-black mb-0.5" style={{ color:PLUM }}>Hi, Amanda! 👋</p>
+        <p className="text-3xl font-black mb-0.5 flex items-center gap-2" style={{ color:PLUM }}>Hi, Amanda! <Hand size={28} strokeWidth={2.5} /></p>
         <p className="text-sm mb-6 leading-relaxed" style={{ color:MUTED }}>
           We found your CCA memberships from NUS. These will be used to personalise your experience.
         </p>
@@ -1410,9 +1470,7 @@ function DiscoverTab({ saved, onSave, onOpenSheet, initialCategory = "" }: {
             onClick={() => setShowFilter(true)}
             className="w-9 h-9 flex items-center justify-center rounded-xl relative flex-shrink-0"
             style={{ backgroundColor: activeFilters > 0 ? CORAL : WHITE }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={activeFilters > 0 ? FWHITE : PLUM} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
-            </svg>
+            <Funnel size={17} color={activeFilters > 0 ? FWHITE : PLUM} strokeWidth={2.2} />
             {activeFilters > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center" style={{ backgroundColor:PLUM, color:CREAM }}>{activeFilters}</span>
             )}
@@ -1438,7 +1496,7 @@ function DiscoverTab({ saved, onSave, onOpenSheet, initialCategory = "" }: {
         <div className="flex-1 overflow-y-auto px-4 pb-6" style={hideScroll}>
           {query === "" && activeFilters === 0 ? (
             <div className="flex flex-col items-center justify-center py-20">
-              <p className="text-4xl mb-3">🔎</p>
+              <Search size={38} className="mb-3" color={MUTED} strokeWidth={2} />
               <p className="text-sm text-center" style={{ color:MUTED }}>Start typing to search CCAs</p>
             </div>
           ) : results.length > 0 ? (
@@ -1449,6 +1507,7 @@ function DiscoverTab({ saved, onSave, onOpenSheet, initialCategory = "" }: {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-24">
+              <SearchX size={42} className="mb-3" color={MUTED} strokeWidth={1.8} />
               <p className="text-sm text-center" style={{ color:MUTED }}>No matching results found.</p>
             </div>
           )}
@@ -1623,6 +1682,8 @@ function WishlistTab({ saved, onOpenSheet, lists, setLists, onFullRemove }: {
   const [renameOpen,    setRenameOpen]    = React.useState(false);
   const [renameValue,   setRenameValue]   = React.useState("");
   const [deleteOpen,    setDeleteOpen]    = React.useState(false);
+  const [exitingCcas,   setExitingCcas]   = React.useState<{ item: CCA; index: number }[]>([]);
+  const ccaExitTimers = React.useRef(new Map<number, ReturnType<typeof setTimeout>>());
 
   const nameError = newListName.trim() !== "" && lists.some(
     l => l.name.toLowerCase() === newListName.trim().toLowerCase()
@@ -1650,9 +1711,55 @@ function WishlistTab({ saved, onOpenSheet, lists, setLists, onFullRemove }: {
   const allSaved   = CCAS.filter(c => saved.has(c.id));
   const activeList = lists.find(l => l.id === activeId);
   const displayed  = activeId === "all" ? allSaved : allSaved.filter(c => activeList?.ccaIds.has(c.id));
+  const displayedWithExit = withExitingItems(displayed, exitingCcas, c => c.id);
+
+  const cancelCcaExit = (id: number) => {
+    const t = ccaExitTimers.current.get(id);
+    if (t) clearTimeout(t);
+    ccaExitTimers.current.delete(id);
+    setExitingCcas(prev => prev.filter(e => e.item.id !== id));
+  };
+
+  const beginCcaExit = (cca: CCA) => {
+    const index = displayed.findIndex(c => c.id === cca.id);
+    if (index < 0) return;
+    cancelCcaExit(cca.id);
+    setExitingCcas(prev => [...prev, { item: cca, index }]);
+    ccaExitTimers.current.set(cca.id, setTimeout(() => {
+      ccaExitTimers.current.delete(cca.id);
+      setExitingCcas(prev => prev.filter(e => e.item.id !== cca.id));
+    }, COLLAPSE_MS + 30));
+  };
+
+  React.useEffect(() => {
+    const live = new Set(displayed.map(c => c.id));
+    setExitingCcas(prev => {
+      let changed = false;
+      const next = prev.filter(e => {
+        if (!live.has(e.item.id)) return true;
+        const t = ccaExitTimers.current.get(e.item.id);
+        if (t) clearTimeout(t);
+        ccaExitTimers.current.delete(e.item.id);
+        changed = true;
+        return false;
+      });
+      return changed ? next : prev;
+    });
+  }, [saved, lists, activeId]);
+
+  React.useEffect(() => {
+    ccaExitTimers.current.forEach(clearTimeout);
+    ccaExitTimers.current.clear();
+    setExitingCcas([]);
+  }, [activeId]);
+
+  React.useEffect(() => () => {
+    ccaExitTimers.current.forEach(clearTimeout);
+  }, []);
 
   const handleRemoveConfirm = () => {
     if (!removeCca) return;
+    beginCcaExit(removeCca);
     if (removeFromAll) {
       onFullRemove(removeCca.id);
     } else if (activeId !== "all") {
@@ -1689,7 +1796,7 @@ function WishlistTab({ saved, onOpenSheet, lists, setLists, onFullRemove }: {
         <div>
           <h1 className="text-xl font-black" style={{ color:PLUM }}>My Wishlist</h1>
           <p className="text-sm mt-0.5" style={{ color:MUTED }}>
-            {displayed.length} CCA{displayed.length !== 1 ? "s" : ""}
+            {displayedWithExit.length} CCA{displayedWithExit.length !== 1 ? "s" : ""}
           </p>
         </div>
         {/* Edit button — only visible when a sublist is active */}
@@ -1750,7 +1857,7 @@ function WishlistTab({ saved, onOpenSheet, lists, setLists, onFullRemove }: {
       </div>
 
       {/* CCA cards */}
-      {displayed.length === 0 ? (
+      {displayedWithExit.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center px-8">
          
           <p className="text-lg font-black mb-1.5 text-center" style={{ color:PLUM }}>
@@ -1772,9 +1879,10 @@ function WishlistTab({ saved, onOpenSheet, lists, setLists, onFullRemove }: {
           )}
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto px-5 pb-6 space-y-3" style={hideScroll}>
-          {displayed.map(cca => (
-            <div key={cca.id} className="relative">
+        <div className="flex-1 overflow-y-auto px-5 pb-6" style={hideScroll}>
+          {displayedWithExit.map(({ item: cca, exiting }) => (
+            <CollapsingItem key={cca.id} exiting={exiting}>
+            <div className="relative">
               {/* Card */}
               <div
                 className="rounded-2xl overflow-hidden flex cursor-pointer active:scale-[0.98] transition-transform"
@@ -1832,6 +1940,7 @@ function WishlistTab({ saved, onOpenSheet, lists, setLists, onFullRemove }: {
                 </div>
               )}
             </div>
+            </CollapsingItem>
           ))}
         </div>
       )}
@@ -1990,12 +2099,13 @@ function WishlistTab({ saved, onOpenSheet, lists, setLists, onFullRemove }: {
 // ══════════════════════════════════════════════════════════════════════════════
 // TAB: Events
 // ══════════════════════════════════════════════════════════════════════════════
-function EventsTab({ saved, notifiedDetailEvts, setNotifiedDetailEvts, onTabChange, notifiedEvts, setNotifiedEvts, removedEvtKeys, setRemovedEvtKeys }: {
+function EventsTab({ saved, notifiedDetailEvts, setNotifiedDetailEvts, onTabChange, notifiedEvts, setNotifiedEvts, removedEvtKeys, setRemovedEvtKeys, onReminderChange }: {
   saved: Set<number>; notifiedDetailEvts?: Set<string>;
   setNotifiedDetailEvts?: React.Dispatch<React.SetStateAction<Set<string>>>;
   onTabChange?: (t: Tab) => void;
   notifiedEvts: Set<number>; setNotifiedEvts: React.Dispatch<React.SetStateAction<Set<number>>>;
   removedEvtKeys: Set<string>; setRemovedEvtKeys: React.Dispatch<React.SetStateAction<Set<string>>>;
+  onReminderChange?: (turnedOn: boolean, undoFn: () => void) => void;
 }) {
   const { isDark } = useDark();
   const TODAY     = new Date(2026, 7, 28);
@@ -2020,6 +2130,8 @@ function EventsTab({ saved, notifiedDetailEvts, setNotifiedDetailEvts, onTabChan
   const [menuEvtKey,      setMenuEvtKey]      = useState<string | null>(null);
   const [removeConfirm,   setRemoveConfirm]   = useState<{ id: number; title: string } | null>(null);
   const [selectedEvent,   setSelectedEvent]   = useState<EventDetailData | null>(null);
+  const [exitingEvts,     setExitingEvts]     = useState<{ item: typeof EVENTS[0]; index: number; section: "upcoming" | "past" }[]>([]);
+  const evtExitTimers = React.useRef(new Map<number, ReturnType<typeof setTimeout>>());
 
   const scrollRef  = React.useRef<HTMLDivElement>(null);
   const eventRefs  = React.useRef<Map<number, HTMLDivElement>>(new Map());
@@ -2097,6 +2209,57 @@ function EventsTab({ saved, notifiedDetailEvts, setNotifiedDetailEvts, onTabChan
   const pastEvents = React.useMemo(() =>
     [...sortedEvents.filter(ev => parseEvDate(ev.date) < todayStart)].reverse(), [sortedEvents]);
 
+  const cancelEventExit = (id: number) => {
+    const t = evtExitTimers.current.get(id);
+    if (t) clearTimeout(t);
+    evtExitTimers.current.delete(id);
+    setExitingEvts(prev => prev.filter(e => e.item.id !== id));
+  };
+
+  const beginEventExit = (ev: typeof EVENTS[0]) => {
+    const upcoming = parseEvDate(ev.date) >= todayStart;
+    const list = upcoming ? upcomingEvents : pastEvents;
+    const index = list.findIndex(e => e.id === ev.id);
+    if (index < 0) return;
+    cancelEventExit(ev.id);
+    setExitingEvts(prev => [...prev, { item: ev, index, section: upcoming ? "upcoming" : "past" }]);
+    evtExitTimers.current.set(ev.id, setTimeout(() => {
+      evtExitTimers.current.delete(ev.id);
+      setExitingEvts(prev => prev.filter(e => e.item.id !== ev.id));
+    }, COLLAPSE_MS + 30));
+  };
+
+  const upcomingDisplay = withExitingItems(
+    upcomingEvents,
+    exitingEvts.filter(e => e.section === "upcoming"),
+    e => e.id,
+  );
+  const pastDisplay = withExitingItems(
+    pastEvents,
+    exitingEvts.filter(e => e.section === "past"),
+    e => e.id,
+  );
+
+  React.useEffect(() => {
+    const live = new Set([...upcomingEvents, ...pastEvents].map(e => e.id));
+    setExitingEvts(prev => {
+      let changed = false;
+      const next = prev.filter(e => {
+        if (!live.has(e.item.id)) return true;
+        const t = evtExitTimers.current.get(e.item.id);
+        if (t) clearTimeout(t);
+        evtExitTimers.current.delete(e.item.id);
+        changed = true;
+        return false;
+      });
+      return changed ? next : prev;
+    });
+  }, [upcomingEvents, pastEvents]);
+
+  React.useEffect(() => () => {
+    evtExitTimers.current.forEach(clearTimeout);
+  }, []);
+
   // For calendar dots: any event on that date
   const eventsByDate = React.useMemo(() => {
     const map: Record<string, boolean> = {};
@@ -2149,19 +2312,37 @@ function EventsTab({ saved, notifiedDetailEvts, setNotifiedDetailEvts, onTabChan
   const nextWeek = () => setWeekOffset(o => o + 1);
 
   const toggleBell = (evId: number) => {
+    const ev = sortedEvents.find(e => e.id === evId);
+    const turningOff = evId > 0
+      ? notifiedEvts.has(evId)
+      : (notifiedDetailEvts?.has(`${Math.floor(-evId / 100)}-${(-evId) % 100}`) ?? false);
+    if (ev && turningOff) {
+      const staysOnPage = !filterNotified && ev.id > 0 && saved.has(ev.ccaId);
+      if (!staysOnPage) beginEventExit(ev);
+    }
     if (evId > 0) {
-      setNotifiedEvts(prev => { const n = new Set(prev); n.has(evId) ? n.delete(evId) : n.add(evId); return n; });
+      const wasOn = notifiedEvts.has(evId);
+      setNotifiedEvts(prev => { const n = new Set(prev); wasOn ? n.delete(evId) : n.add(evId); return n; });
+      onReminderChange?.(!wasOn, () => {
+        setNotifiedEvts(prev => { const n = new Set(prev); n.add(evId); return n; });
+      });
     } else {
       const ccaId = Math.floor(-evId / 100);
       const idx   = (-evId) % 100;
       const key   = `${ccaId}-${idx}`;
+      const wasOn = notifiedDetailEvts?.has(key) ?? false;
       if (setNotifiedDetailEvts) {
-        setNotifiedDetailEvts(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
+        setNotifiedDetailEvts(prev => { const n = new Set(prev); wasOn ? n.delete(key) : n.add(key); return n; });
       }
+      onReminderChange?.(!wasOn, () => {
+        setNotifiedDetailEvts?.(prev => { const n = new Set(prev); n.add(key); return n; });
+      });
     }
   };
 
   const handleRemove = (evId: number) => {
+    const ev = sortedEvents.find(e => e.id === evId);
+    if (ev) beginEventExit(ev);
     const key = String(evId);
     setRemovedEvtKeys(prev => new Set([...prev, key]));
     if (evId > 0) {
@@ -2183,11 +2364,12 @@ function EventsTab({ saved, notifiedDetailEvts, setNotifiedDetailEvts, onTabChan
     return notifiedDetailEvts?.has(`${ccaId}-${idx}`) ?? false;
   };
 
-  const renderEvent = (ev: typeof EVENTS[0]) => {
+  const renderEvent = (ev: typeof EVENTS[0], exiting = false) => {
     const evKey = String(ev.id);
     const on    = isBellOn(ev);
     return (
-      <div key={ev.id} className="relative">
+      <CollapsingItem key={ev.id} exiting={exiting}>
+      <div className="relative">
         <div
           ref={el => { if (el) eventRefs.current.set(ev.id, el); else eventRefs.current.delete(ev.id); }}
           className="rounded-xl p-4 flex gap-3 items-center cursor-pointer active:opacity-80 transition-opacity"
@@ -2222,6 +2404,7 @@ function EventsTab({ saved, notifiedDetailEvts, setNotifiedDetailEvts, onTabChan
           </button>
         </div>
       </div>
+      </CollapsingItem>
     );
   };
 
@@ -2243,9 +2426,7 @@ function EventsTab({ saved, notifiedDetailEvts, setNotifiedDetailEvts, onTabChan
           className="relative w-9 h-9 rounded-xl flex items-center justify-center shadow-sm"
           style={{ backgroundColor: activeFilterCount > 0 ? CORAL : WHITE }}
         >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={activeFilterCount > 0 ? FWHITE : PLUM} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-          </svg>
+          <Funnel size={17} color={activeFilterCount > 0 ? FWHITE : PLUM} strokeWidth={2.2} />
           {activeFilterCount > 0 && (
             <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black" style={{ backgroundColor:CORAL, color:FWHITE }}>
               {activeFilterCount}
@@ -2311,7 +2492,7 @@ function EventsTab({ saved, notifiedDetailEvts, setNotifiedDetailEvts, onTabChan
             <span className="text-sm font-black" style={{ color:PLUM }}>Upcoming Events</span>
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor:LIGHT_CORAL, color:CORAL }}>
-                {upcomingEvents.length}
+                {upcomingDisplay.length}
               </span>
               <ChevronDown
                 size={16}
@@ -2322,8 +2503,8 @@ function EventsTab({ saved, notifiedDetailEvts, setNotifiedDetailEvts, onTabChan
           </button>
 
           {upcomingOpen && (
-            <div className="px-5 pb-4 space-y-3">
-              {upcomingEvents.length === 0 ? (
+            <div className="px-5 pb-4">
+              {upcomingDisplay.length === 0 ? (
                 <div className="flex flex-col items-center gap-4 py-10">
                   <p className="text-sm font-bold text-center" style={{ color:MUTED }}>Go to Discover to explore Events</p>
                   <button
@@ -2335,7 +2516,7 @@ function EventsTab({ saved, notifiedDetailEvts, setNotifiedDetailEvts, onTabChan
                   </button>
                 </div>
               ) : (
-                upcomingEvents.map(ev => renderEvent(ev))
+                upcomingDisplay.map(({ item, exiting }) => renderEvent(item, exiting))
               )}
             </div>
           )}
@@ -2354,7 +2535,7 @@ function EventsTab({ saved, notifiedDetailEvts, setNotifiedDetailEvts, onTabChan
             <span className="text-sm font-black" style={{ color:PLUM }}>Past Events</span>
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor:PLUM_SOFT, color:MUTED }}>
-                {pastEvents.length}
+                {pastDisplay.length}
               </span>
               <ChevronDown
                 size={16}
@@ -2365,11 +2546,11 @@ function EventsTab({ saved, notifiedDetailEvts, setNotifiedDetailEvts, onTabChan
           </button>
 
           {pastOpen && (
-            <div className="px-5 pb-4 space-y-3">
-              {pastEvents.length === 0 ? (
+            <div className="px-5 pb-4">
+              {pastDisplay.length === 0 ? (
                 <p className="text-sm font-bold text-center py-8" style={{ color:MUTED }}>No Past Events Saved</p>
               ) : (
-                pastEvents.map(ev => renderEvent(ev))
+                pastDisplay.map(({ item, exiting }) => renderEvent(item, exiting))
               )}
             </div>
           )}
@@ -3379,7 +3560,7 @@ function NotificationsPage({ onBack, read, setRead, items = [] }: {
           <div className="px-5 py-4 space-y-3">
             {items.length === 0 && (
               <div className="flex flex-col items-center justify-center py-24 px-8">
-                <p className="text-5xl mb-4">🔔</p>
+                <Bell size={48} className="mb-4" color={MUTED} strokeWidth={1.8} />
                 <p className="text-base font-black mb-1.5 text-center" style={{ color:PLUM }}>No notifications yet</p>
                 <p className="text-sm text-center leading-relaxed" style={{ color:MUTED }}>
                   Updates on CCA events and deadlines will appear here.
@@ -3427,7 +3608,7 @@ function NotificationsPage({ onBack, read, setRead, items = [] }: {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-24 px-8">
-            <p className="text-5xl mb-4">💬</p>
+            <MessageSquare size={48} className="mb-4" color={MUTED} strokeWidth={1.8} />
             <p className="text-base font-black mb-1.5 text-center" style={{ color:PLUM }}>No messages yet</p>
             <p className="text-sm text-center leading-relaxed" style={{ color:MUTED }}>
               When someone replies to your reviews, their messages will appear here.
@@ -3767,13 +3948,14 @@ function EventDetailPage({ event, onBack }: { event: EventDetailData; onBack: ()
   );
 }
 
-function DetailEventsTab({ cca, notifiedDetailEvts, setNotifiedDetailEvts, removedEvtKeys, setRemovedEvtKeys, onOpenEvent }: {
+function DetailEventsTab({ cca, notifiedDetailEvts, setNotifiedDetailEvts, removedEvtKeys, setRemovedEvtKeys, onOpenEvent, onReminderChange }: {
   cca: CCA;
   notifiedDetailEvts?: Set<string>;
   setNotifiedDetailEvts?: React.Dispatch<React.SetStateAction<Set<string>>>;
   removedEvtKeys?: Set<string>;
   setRemovedEvtKeys?: React.Dispatch<React.SetStateAction<Set<string>>>;
   onOpenEvent?: (ev: EventDetailData) => void;
+  onReminderChange?: (turnedOn: boolean, undoFn: () => void) => void;
 }) {
   const { isDark } = useDark();
   const events = CCA_DETAIL_EVENTS[cca.id] ?? [
@@ -3785,6 +3967,7 @@ function DetailEventsTab({ cca, notifiedDetailEvts, setNotifiedDetailEvts, remov
     if (!setNotifiedDetailEvts) return;
     const [ccaIdStr, idxStr] = key.split("-");
     const evKey = String(-(parseInt(ccaIdStr) * 100 + parseInt(idxStr)));
+    const wasOn = notifiedDetailEvts?.has(key) ?? false;
     setNotifiedDetailEvts(prev => {
       const n = new Set(prev);
       if (n.has(key)) {
@@ -3797,6 +3980,9 @@ function DetailEventsTab({ cca, notifiedDetailEvts, setNotifiedDetailEvts, remov
         }
       }
       return n;
+    });
+    onReminderChange?.(!wasOn, () => {
+      setNotifiedDetailEvts(prev => { const n = new Set(prev); n.add(key); return n; });
     });
   };
 
@@ -4095,7 +4281,7 @@ function ReviewThreadPage({ review, onBack }: { review: typeof REVIEW_DATA[0]; o
               style={{ color:MUTED }}
               onClick={() => setReplyTarget(review.user)}
             >
-              ✕
+              <X size={12} color={MUTED} strokeWidth={2.5} />
             </button>
           </div>
         )}
@@ -4280,7 +4466,7 @@ function DetailReviewsTab({ cca, onOpenThread, username, isMember }: { cca: CCA;
 // ══════════════════════════════════════════════════════════════════════════════
 type DetailTab = "home" | "about" | "events" | "reviews";
 
-function CcaDetailPage({ cca, saved, onSave, onBack, onMainTabChange, username, notifiedDetailEvts, setNotifiedDetailEvts, userMemberships, removedEvtKeys, setRemovedEvtKeys }: {
+function CcaDetailPage({ cca, saved, onSave, onBack, onMainTabChange, username, notifiedDetailEvts, setNotifiedDetailEvts, userMemberships, removedEvtKeys, setRemovedEvtKeys, onReminderChange }: {
   cca: CCA; saved: boolean; onSave: ()=>void;
   onBack: ()=>void; onMainTabChange: (t: Tab)=>void;
   username?: string;
@@ -4289,6 +4475,7 @@ function CcaDetailPage({ cca, saved, onSave, onBack, onMainTabChange, username, 
   userMemberships?: number[];
   removedEvtKeys?: Set<string>;
   setRemovedEvtKeys?: React.Dispatch<React.SetStateAction<Set<string>>>;
+  onReminderChange?: (turnedOn: boolean, undoFn: () => void) => void;
 }) {
   const [vis, setVis] = React.useState(false);
   React.useEffect(() => { const t = requestAnimationFrame(() => setVis(true)); return () => cancelAnimationFrame(t); }, []);
@@ -4339,7 +4526,7 @@ function CcaDetailPage({ cca, saved, onSave, onBack, onMainTabChange, username, 
           <p className="text-xl font-black leading-tight" style={{ color:PLUM }}>{cca.name}</p>
           <p className="text-sm mt-0.5" style={{ color:MUTED }}>{cca.category}</p>
         </div>
-        <button onClick={e => { e.stopPropagation(); onSave(); }} className="w-9 h-9 flex items-center justify-center rounded-full mt-1 transition-colors" style={{ backgroundColor: PEACH }}>
+        <button onClick={e => { e.stopPropagation(); onSave(); }} className="w-9 h-9 flex items-center justify-center rounded-full mt-1 transition-colors" style={{ backgroundColor: saved ? LIGHT_CORAL : WHITE }}>
           <Heart size={18} fill={saved ? CORAL : "none"} color={saved ? CORAL : MUTED} strokeWidth={saved ? 0 : 2} />
         </button>
       </div>
@@ -4365,7 +4552,7 @@ function CcaDetailPage({ cca, saved, onSave, onBack, onMainTabChange, username, 
       <div className="flex-1 overflow-y-auto" style={{ backgroundColor:CREAM, ...hideScroll }}>
         {tab === "home"    && <DetailHomeTab    cca={cca} />}
         {tab === "about"   && <DetailAboutTab   cca={cca} username={username} />}
-        {tab === "events"  && <DetailEventsTab  cca={cca} notifiedDetailEvts={notifiedDetailEvts} setNotifiedDetailEvts={setNotifiedDetailEvts} removedEvtKeys={removedEvtKeys} setRemovedEvtKeys={setRemovedEvtKeys} onOpenEvent={setSelectedDetailEvent} />}
+        {tab === "events"  && <DetailEventsTab  cca={cca} notifiedDetailEvts={notifiedDetailEvts} setNotifiedDetailEvts={setNotifiedDetailEvts} removedEvtKeys={removedEvtKeys} setRemovedEvtKeys={setRemovedEvtKeys} onOpenEvent={setSelectedDetailEvent} onReminderChange={onReminderChange} />}
         {tab === "reviews" && <DetailReviewsTab cca={cca} onOpenThread={setThreadReview} username={username} isMember={userMemberships?.includes(cca.id) ?? false} />}
       </div>
 
@@ -4408,7 +4595,7 @@ function MainApp({ onSignOut, username, avatar, selectedInterests, commitmentLev
   ]);
   const [pendingRemoveCca, setPendingRemoveCca] = useState<CCA|null>(null);
   const [addToListCca, setAddToListCca] = useState<CCA|null>(null);
-  const [toast, setToast] = useState<{ msg: string; undoFn: () => void; ccaId?: number } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; desc?: string; undoFn?: () => void; ccaId?: number } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [sheetCca,  setSheetCca]  = useState<CCA|null>(null);
   const [detailCca, setDetailCca] = useState<CCA|null>(null);
@@ -4434,10 +4621,18 @@ function MainApp({ onSignOut, username, avatar, selectedInterests, commitmentLev
     setTab("discover");
   };
 
-  const showToast = (msg: string, undoFn: () => void, ccaId?: number) => {
+  const showToast = (opts: { msg: string; desc?: string; undoFn?: () => void; ccaId?: number }) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast({ msg, undoFn, ccaId });
+    setToast(opts);
     toastTimer.current = setTimeout(() => setToast(null), 5000);
+  };
+
+  const handleReminderChange = (turnedOn: boolean, undoFn: () => void) => {
+    if (turnedOn) {
+      showToast({ msg: "Reminder added", desc: "You'll be reminded about this event." });
+    } else {
+      showToast({ msg: "Reminder removed", desc: "This event is no longer in your Event reminders.", undoFn });
+    }
   };
 
   const handleFullRemove = (id: number) => {
@@ -4446,8 +4641,11 @@ function MainApp({ onSignOut, username, avatar, selectedInterests, commitmentLev
       const next = new Set(l.ccaIds); next.delete(id); return { ...l, ccaIds: next };
     }));
     const cca = CCAS.find(c => c.id === id);
-    showToast(`${cca?.name} removed`, () => {
-      setSaved(prev => { const n = new Set(prev); n.add(id); return n; });
+    showToast({
+      msg: `${cca?.name} removed`,
+      undoFn: () => {
+        setSaved(prev => { const n = new Set(prev); n.add(id); return n; });
+      },
     });
   };
 
@@ -4461,14 +4659,21 @@ function MainApp({ onSignOut, username, avatar, selectedInterests, commitmentLev
         return;
       }
       setSaved(prev => { const n = new Set(prev); n.delete(id); return n; });
-      showToast(`${cca?.name} removed`, () => {
-        setSaved(prev => { const n = new Set(prev); n.add(id); return n; });
+      showToast({
+        msg: `${cca?.name} removed`,
+        undoFn: () => {
+          setSaved(prev => { const n = new Set(prev); n.add(id); return n; });
+        },
       });
     } else {
       setSaved(prev => { const n = new Set(prev); n.add(id); return n; });
-      showToast(`${cca?.name} added to Wishlist`, () => {
-        setSaved(prev => { const n = new Set(prev); n.delete(id); return n; });
-      }, id);
+      showToast({
+        msg: `${cca?.name} added to Wishlist`,
+        undoFn: () => {
+          setSaved(prev => { const n = new Set(prev); n.delete(id); return n; });
+        },
+        ccaId: id,
+      });
       if (!notifPermAsked) {
         setNotifPermAsked(true);
         setTimeout(() => setShowNotifPerm(true), 400);
@@ -4482,39 +4687,10 @@ function MainApp({ onSignOut, username, avatar, selectedInterests, commitmentLev
         {tab === "home"     && <HomeTab saved={saved} onSave={handleSave} onTabChange={setTab} onOpenSheet={setSheetCca} onNotifications={() => setShowNotifications(true)} onForYou={() => setShowForYou(true)} onOpenDiscoverWithCategory={openDiscoverWithCategory} username={username} hasUnread={hasUnread} isReturning={isReturning} />}
         {tab === "discover" && <DiscoverTab key={discoverKey} saved={saved} onSave={handleSave} onOpenSheet={setSheetCca} initialCategory={discoverInitialCategory} />}
         {tab === "wishlist" && <WishlistTab saved={saved} onOpenSheet={setSheetCca} lists={lists} setLists={setLists} onFullRemove={handleFullRemove} />}
-        {tab === "events"   && <EventsTab saved={saved} notifiedDetailEvts={notifiedDetailEvts} setNotifiedDetailEvts={setNotifiedDetailEvts} onTabChange={setTab} notifiedEvts={notifiedEvts} setNotifiedEvts={setNotifiedEvts} removedEvtKeys={removedEvtKeys} setRemovedEvtKeys={setRemovedEvtKeys} />}
+        {tab === "events"   && <EventsTab saved={saved} notifiedDetailEvts={notifiedDetailEvts} setNotifiedDetailEvts={setNotifiedDetailEvts} onTabChange={setTab} notifiedEvts={notifiedEvts} setNotifiedEvts={setNotifiedEvts} removedEvtKeys={removedEvtKeys} setRemovedEvtKeys={setRemovedEvtKeys} onReminderChange={handleReminderChange} />}
         {tab === "profile"  && <ProfileTab onSignOut={onSignOut} username={username} avatar={avatar} selectedInterests={selectedInterests} commitmentLevel={commitmentLevel} onUpdateProfile={onUpdateProfile} onUpdateInterests={onUpdateInterests} onUpdateCommitment={onUpdateCommitment} onNavigateToInterest={label => { openDiscoverWithCategory(label); }} userMemberships={userMemberships} onOpenCca={(cca) => { setDetailCca(cca); setDetailCcaOrigin("profile"); }} userEmail={userEmail} />}
       </div>
       <BottomNav tab={tab} onChange={setTab} />
-
-      {/* Toast */}
-      {toast && (
-        <div
-          className="absolute bottom-24 left-4 right-4 z-[90] flex items-center gap-2 px-4 py-3.5 rounded-2xl shadow-lg pointer-events-auto"
-          style={{ backgroundColor:PLUM, color:WHITE }}
-        >
-          <span className="text-sm font-semibold flex-1">{toast.msg}</span>
-          {toast.ccaId !== undefined && (
-            <button
-              onClick={() => {
-                const cca = CCAS.find(c => c.id === toast.ccaId);
-                if (cca) { setAddToListCca(cca); setToast(null); if (toastTimer.current) clearTimeout(toastTimer.current); }
-              }}
-              className="text-sm font-black px-3 py-1.5 rounded-xl flex-shrink-0 whitespace-nowrap"
-              style={{ backgroundColor:"rgba(255,255,255,0.18)", color:WHITE }}
-            >
-              Move to Sublist
-            </button>
-          )}
-          <button
-            onClick={() => { toast.undoFn(); setToast(null); if (toastTimer.current) clearTimeout(toastTimer.current); }}
-            className="text-sm font-black px-3 py-1.5 rounded-xl flex-shrink-0"
-            style={{ backgroundColor:"rgba(255,255,255,0.18)", color:WHITE }}
-          >
-            Undo
-          </button>
-        </div>
-      )}
 
       {/* Pending remove modal (CCA is in a list, triggered from heart toggle outside WishlistTab) */}
       {pendingRemoveCca && (
@@ -4652,6 +4828,7 @@ function MainApp({ onSignOut, username, avatar, selectedInterests, commitmentLev
             userMemberships={userMemberships}
             removedEvtKeys={removedEvtKeys}
             setRemovedEvtKeys={setRemovedEvtKeys}
+            onReminderChange={handleReminderChange}
           />
         </div>
       )}
@@ -4674,6 +4851,42 @@ function MainApp({ onSignOut, username, avatar, selectedInterests, commitmentLev
           setRead={setNotifRead}
           items={notificationItems}
         />
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div
+          className="absolute bottom-24 left-4 right-4 z-[90] flex items-center gap-2 px-4 py-3.5 rounded-2xl shadow-lg pointer-events-auto"
+          style={{ backgroundColor:PLUM, color:WHITE }}
+        >
+          <div className="flex-1 min-w-0">
+            <span className="text-sm font-semibold block">{toast.msg}</span>
+            {toast.desc && (
+              <span className="text-xs mt-0.5 block" style={{ color:"rgba(255,255,255,0.75)" }}>{toast.desc}</span>
+            )}
+          </div>
+          {toast.ccaId !== undefined && (
+            <button
+              onClick={() => {
+                const cca = CCAS.find(c => c.id === toast.ccaId);
+                if (cca) { setAddToListCca(cca); setToast(null); if (toastTimer.current) clearTimeout(toastTimer.current); }
+              }}
+              className="text-sm font-black px-3 py-1.5 rounded-xl flex-shrink-0 whitespace-nowrap"
+              style={{ backgroundColor:"rgba(255,255,255,0.18)", color:WHITE }}
+            >
+              Move to Sublist
+            </button>
+          )}
+          {toast.undoFn && (
+            <button
+              onClick={() => { toast.undoFn?.(); setToast(null); if (toastTimer.current) clearTimeout(toastTimer.current); }}
+              className="text-sm font-black px-3 py-1.5 rounded-xl flex-shrink-0"
+              style={{ backgroundColor:"rgba(255,255,255,0.18)", color:WHITE }}
+            >
+              Undo
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
