@@ -1799,7 +1799,7 @@ function OnboardCommitmentScreen({
                 onClick={() => setSelected(id)}
                 className="w-full rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-[0.98]"
                 style={{
-                  backgroundColor: on ? PLUM_SOFT : CREAM,
+                  backgroundColor: on ? WHITE : CREAM,
                   border: `2px solid ${on ? bg : BORDER}`,
                 }}
               >
@@ -1821,13 +1821,13 @@ function OnboardCommitmentScreen({
                   </p>
                 </div>
                 <div
-                  className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all"
+                  className="w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-all"
                   style={{
                     borderColor: on ? PLUM : BORDER,
-                    backgroundColor: on ? PLUM : "transparent",
+                    backgroundColor: on ? CORAL : "transparent",
                   }}
                 >
-                  {on && <Check size={11} color={WHITE} strokeWidth={3} />}
+                  {on && <Check size={11} color={FWHITE} strokeWidth={3} />}
                 </div>
               </button>
             );
@@ -2524,7 +2524,7 @@ function FilterPage({
                 onClick={() => setCommit(on ? "" : id)}
                 className="flex items-center gap-3 w-full rounded-2xl p-3 text-left transition-all"
                 style={{
-                  backgroundColor: on ? PLUM_SOFT : CREAM,
+                  backgroundColor: on ? WHITE : CREAM,
                   border: `1.5px solid ${on ? PLUM : BORDER}`,
                 }}
               >
@@ -5850,13 +5850,13 @@ function RefinePreferencesPage({
                   </p>
                 </div>
                 <div
-                  className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                  className="w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0"
                   style={{
                     borderColor: on ? PLUM : BORDER,
-                    backgroundColor: on ? PLUM : "transparent",
+                    backgroundColor: on ? CORAL : "transparent",
                   }}
                 >
-                  {on && <Check size={11} color={WHITE} strokeWidth={3} />}
+                  {on && <Check size={11} color={FWHITE} strokeWidth={3} />}
                 </div>
               </button>
             );
@@ -5950,7 +5950,7 @@ function ProfileTab({
           </p>
           <button
             onClick={() => setShowManage(true)}
-            className="flex items-center gap-1 text-sm font-bold active:opacity-70"
+            className="flex items-center gap-1 text-sm font-bold underline underline-offset-2 active:opacity-70"
             style={{ color: PLUM }}
           >
             Manage account <ChevronRight size={14} strokeWidth={2.5} />
