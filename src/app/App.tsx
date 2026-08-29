@@ -318,7 +318,7 @@ function UrgencyPill({ days }: { days: number }) {
 // ─── CCA Cards ───────────────────────────────────────────────────────────────
 function CcaCardSmall({ cca, saved, onSave, onClick }: { cca:CCA; saved:boolean; onSave:()=>void; onClick?:()=>void }) {
   return (
-    <div className="flex-shrink-0 w-40 rounded-2xl overflow-hidden shadow-sm cursor-pointer active:scale-[0.97] transition-transform" style={{ backgroundColor:CREAM }} onClick={onClick}>
+    <div className="flex-shrink-0 w-40 rounded-2xl overflow-hidden shadow-md cursor-pointer active:scale-[0.97] transition-transform" style={{ backgroundColor:WHITE, border:`1.5px solid ${BORDER}` }} onClick={onClick}>
       <div className="h-24 relative overflow-hidden" style={{ backgroundColor:cca.bgColor }}>
         <img src={cca.img} alt={cca.name} className="absolute inset-0 w-full h-full object-cover" />
         <button
@@ -1106,11 +1106,12 @@ function HomeTab({ saved, onSave, onTabChange, onOpenSheet, onNotifications, onF
   username:string; hasUnread:boolean; isReturning?:boolean;
 }) {
   return (
-    <div className="h-full overflow-y-auto" style={{ backgroundColor:LIGHT_PEACH, ...hideScroll }}>
+    <div className="h-full overflow-y-auto" style={{ backgroundColor:CREAM, ...hideScroll }}>
       {/* Header */}
-      <div className="px-5 pt-14 pb-2 flex items-start justify-between">
+      <div className="px-5 pt-14 pb-5 flex items-center justify-between" style={{ backgroundColor:"rgb(218, 106, 104)" }}>
         <div>
-          <p className="text-xl font-black leading-tight" style={{ color:PLUM }}>{isReturning ? `Welcome back, ${username}!` : `Hello, ${username}!`}</p>
+          <p className="text-sm font-bold leading-tight mb-0.5" style={{ color:"rgba(255,255,255,0.72)" }}>{isReturning ? "Welcome back," : "Hello,"}</p>
+          <p className="text-xl font-black leading-tight" style={{ color:WHITE }}>{username}!</p>
         </div>
         <button
           onClick={onNotifications}
@@ -1125,14 +1126,14 @@ function HomeTab({ saved, onSave, onTabChange, onOpenSheet, onNotifications, onF
       </div>
 
       {/* Upcoming Deadlines */}
-      <section className="px-5 pt-4">
+      <section className="px-5 pt-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-black" style={{ color:PLUM }}>Upcoming Deadlines</h2>
-          <button onClick={() => onTabChange("events")} className="text-xs font-bold" style={{ color:MUTED }}>See all →</button>
+          <button onClick={() => onTabChange("events")} className="text-xs font-bold" style={{ color:CORAL }}>See all →</button>
         </div>
         <div className="space-y-2.5">
           {EVENTS.slice(0,2).map(ev => (
-            <div key={ev.id} className="rounded-xl p-3.5 flex items-center gap-3 shadow-sm" style={{ backgroundColor:WHITE, border:`1.5px solid ${BORDER}` }}>
+            <div key={ev.id} className="rounded-xl p-3.5 flex items-center gap-3 shadow-md" style={{ backgroundColor:WHITE, border:`1.5px solid ${BORDER}` }}>
               <div className="w-12 h-12 rounded-xl flex flex-col items-center justify-center flex-shrink-0" style={{ backgroundColor:LIGHT_CORAL }}>
                 <p className="text-[8px] font-black uppercase tracking-wide" style={{ color:CORAL }}>{ev.date.split(" ")[0]}</p>
                 <p className="text-base font-black leading-tight" style={{ color:PLUM }}>{ev.date.split(" ")[1]}</p>
@@ -1151,7 +1152,7 @@ function HomeTab({ saved, onSave, onTabChange, onOpenSheet, onNotifications, onF
       <section className="pt-6">
         <div className="px-5 flex items-center justify-between mb-3">
           <h2 className="text-base font-black" style={{ color:PLUM }}>For You</h2>
-          <button onClick={onForYou} className="text-xs font-bold" style={{ color:MUTED }}>See all →</button>
+          <button onClick={onForYou} className="text-xs font-bold" style={{ color:CORAL }}>See all →</button>
         </div>
         <div className="flex gap-3 px-5 overflow-x-auto pb-2" style={hideScroll}>
           {CCAS.slice(0,5).map(cca => (
@@ -1164,7 +1165,7 @@ function HomeTab({ saved, onSave, onTabChange, onOpenSheet, onNotifications, onF
       <section className="pt-6 px-5 pb-8">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-black" style={{ color:PLUM }}>Explore</h2>
-          <button onClick={() => onOpenDiscoverWithCategory("")} className="text-xs font-bold" style={{ color:MUTED }}>See all →</button>
+          <button onClick={() => onOpenDiscoverWithCategory("")} className="text-xs font-bold" style={{ color:CORAL }}>See all →</button>
         </div>
         <div className="grid grid-cols-3 gap-2.5">
           {CATEGORIES.map(cat => (
@@ -1460,7 +1461,7 @@ function DiscoverTab({ saved, onSave, onOpenSheet, initialCategory = "" }: {
   return (
     <div className="h-full flex flex-col" style={{ backgroundColor:CREAM }}>
       {/* Search bar */}
-      <div className="px-5 pt-14 pb-4 flex-shrink-0">
+      <div className="px-5 pt-14 pb-4 flex-shrink-0" style={{ backgroundColor:"rgb(218, 106, 104)" }}>
         <button onClick={enterSearch}
           className="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left"
           style={{ backgroundColor:WHITE, border:`1.5px solid ${BORDER}` }}>
@@ -1470,7 +1471,7 @@ function DiscoverTab({ saved, onSave, onOpenSheet, initialCategory = "" }: {
       </div>
 
       {/* Categories grid */}
-      <div className="flex-1 overflow-y-auto px-5 pb-6" style={hideScroll}>
+      <div className="flex-1 overflow-y-auto px-5 pb-6 pt-5" style={hideScroll}>
         <p className="text-sm font-black mb-3" style={{ color:PLUM }}>Categories</p>
         <div className="grid grid-cols-2 gap-3">
           {DISCOVER_CATS.map(cat => (
@@ -1684,10 +1685,10 @@ function WishlistTab({ saved, onOpenSheet, lists, setLists, onFullRemove }: {
       onClick={() => { setMenuOpenId(null); setEditMenuOpen(false); }}>
 
       {/* Header */}
-      <div className="px-5 pt-14 pb-3 flex-shrink-0 flex items-start justify-between">
+      <div className="px-5 pt-14 pb-3 flex-shrink-0 flex items-start justify-between" style={{ backgroundColor:"rgb(218, 106, 104)" }}>
         <div>
-          <h1 className="text-xl font-black" style={{ color:PLUM }}>My Wishlist</h1>
-          <p className="text-sm mt-0.5" style={{ color:MUTED }}>
+          <h1 className="text-xl font-black" style={{ color:WHITE }}>My Wishlist</h1>
+          <p className="text-sm mt-0.5" style={{ color:"rgba(255,255,255,0.78)" }}>
             {displayed.length} CCA{displayed.length !== 1 ? "s" : ""}
           </p>
         </div>
@@ -1697,9 +1698,9 @@ function WishlistTab({ saved, onOpenSheet, lists, setLists, onFullRemove }: {
             <button
               onClick={e => { e.stopPropagation(); setEditMenuOpen(p => !p); }}
               className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: editMenuOpen ? PLUM_SOFT : "transparent" }}
+              style={{ backgroundColor: editMenuOpen ? "rgba(255,255,255,0.18)" : "transparent" }}
             >
-              <Pencil size={18} color={PLUM} />
+              <Pencil size={18} color={WHITE} />
             </button>
             {editMenuOpen && (
               <div
@@ -1733,7 +1734,7 @@ function WishlistTab({ saved, onOpenSheet, lists, setLists, onFullRemove }: {
       </div>
 
       {/* Chips */}
-      <div className="flex gap-2 px-5 pb-3 overflow-x-auto flex-shrink-0" style={hideScroll}>
+      <div className="flex gap-2 px-5 pt-4 pb-3 overflow-x-auto flex-shrink-0" style={hideScroll}>
         <Chip id="all" label="All" active={activeId === "all"} />
         {lists.map(l => (
           <Chip key={l.id} id={l.id} label={l.name} active={activeId === l.id} />
@@ -2232,10 +2233,10 @@ function EventsTab({ saved, notifiedDetailEvts, setNotifiedDetailEvts, onTabChan
   return (
     <div className="h-full flex flex-col" style={{ backgroundColor:CREAM }}>
       {/* Header */}
-      <div className="px-5 pt-14 pb-3 flex-shrink-0 flex items-end justify-between">
+      <div className="px-5 pt-14 pb-3 flex-shrink-0 flex items-end justify-between" style={{ backgroundColor:"rgb(218, 106, 104)" }}>
         <div>
-          <h1 className="text-xl font-black" style={{ color:PLUM }}>Events</h1>
-          <p className="text-sm" style={{ color:MUTED }}>From your wishlisted CCAs</p>
+          <h1 className="text-xl font-black" style={{ color:WHITE }}>Events</h1>
+          <p className="text-sm" style={{ color:"rgba(255,255,255,0.78)" }}>From your wishlisted CCAs</p>
         </div>
         <button
           onClick={() => setFilterOpen(true)}
@@ -2252,7 +2253,7 @@ function EventsTab({ saved, notifiedDetailEvts, setNotifiedDetailEvts, onTabChan
       </div>
 
       {/* Horizontal week calendar */}
-      <div className="px-5 mb-3 flex-shrink-0">
+      <div className="px-5 pt-4 mb-3 flex-shrink-0">
         <div className="rounded-2xl shadow-sm px-3 pt-3.5 pb-4" style={{ backgroundColor:WHITE }}>
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-black" style={{ color:PLUM }}>{monthLabel}</p>
@@ -3138,12 +3139,12 @@ function ProfileTab({ onSignOut, username, avatar, selectedInterests, commitment
     <div className="h-full relative overflow-hidden" style={{ backgroundColor:CREAM }}>
       <div className="h-full overflow-y-auto" style={hideScroll}>
         {/* Header */}
-        <div className="px-5 pt-14 pb-2">
-          <h1 className="text-xl font-black" style={{ color:PLUM }}>Profile</h1>
+        <div className="px-5 pt-14 pb-4" style={{ backgroundColor:"rgb(218, 106, 104)" }}>
+          <h1 className="text-xl font-black" style={{ color:WHITE }}>Profile</h1>
         </div>
 
         {/* Centered avatar + identity */}
-        <div className="flex flex-col items-center px-5 pb-5 pt-2">
+        <div className="flex flex-col items-center px-5 pb-5 pt-5">
           <AvatarCircle av={avatar} size="w-24 h-24" textSize="text-5xl" />
           <p className="text-xl font-black mb-0.5" style={{ color:PLUM }}>@{username}</p>
           <p className="text-sm mb-3" style={{ color:MUTED }}>{userEmail || NUS_EMAIL}</p>
