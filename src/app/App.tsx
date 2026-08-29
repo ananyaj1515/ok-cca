@@ -1851,10 +1851,29 @@ function OnboardProfileScreen({
         <ProgressStrip step={2} />
       </div>
 
+
+
       <div className="flex-1 px-6 overflow-y-auto" style={hideScroll}>
-        <h2 className="text-2xl font-black mb-8" style={{ color: PLUM }}>
+        <h2 className="text-2xl font-black mb-4" style={{ color: PLUM }}>
           Create your profile
         </h2>
+
+         <div
+          className="flex items-center gap-3 rounded-2xl p-3.5 mb-4"
+          style={{ backgroundColor: LIGHT_MINT }}
+        >
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: "rgba(255,255,255,0.6)" }}
+          >
+            <User size={14} color={PLUM} />
+          </div>
+          <p className="text-xs leading-relaxed flex-1" style={{ color: PLUM }}>
+            Other students see your avatar and username. Your NUS identity
+            stays private.
+          </p>
+        </div>
+
 
         {/* Avatar picker */}
         <p
@@ -1934,21 +1953,7 @@ function OnboardProfileScreen({
           </div>
         </div>
 
-        <div
-          className="flex items-center gap-3 rounded-2xl p-3.5 mb-4"
-          style={{ backgroundColor: LIGHT_MINT }}
-        >
-          <div
-            className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: "rgba(255,255,255,0.6)" }}
-          >
-            <User size={14} color={PLUM} />
-          </div>
-          <p className="text-xs leading-relaxed flex-1" style={{ color: PLUM }}>
-            Other students see your avatar and username — your NUS identity
-            stays private.
-          </p>
-        </div>
+
       </div>
 
       <div className="px-6 pb-10 pt-3">
@@ -2067,6 +2072,8 @@ function HomeTab({
   hasUnread: boolean;
   isReturning?: boolean;
 }) {
+  const upcomingEvents = EVENTS.filter((ev) => saved.has(ev.ccaId)).slice(0, 2);
+
   return (
     <div
       className="h-full overflow-y-auto"
@@ -2129,7 +2136,14 @@ function HomeTab({
           </button>
         </div>
         <div className="space-y-2.5">
-          {EVENTS.slice(0, 2).map((ev) => (
+          {upcomingEvents.length === 0 ? (
+            <div className="rounded-xl p-4 text-center" style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}` }}>
+              <Calendar size={24} className="mx-auto mb-2" color={CORAL} strokeWidth={1.8} />
+              <p className="text-sm font-black mb-1" style={{ color: PLUM }}>No upcoming events</p>
+              <p className="text-xs leading-relaxed mb-3" style={{ color: MUTED }}>Discover CCAs and add them to your Wishlist to see upcoming events.</p>
+              
+            </div>
+          ) : upcomingEvents.map((ev) => (
             <div
               key={ev.id}
               className="rounded-xl p-3.5 flex items-center gap-3 shadow-md"
