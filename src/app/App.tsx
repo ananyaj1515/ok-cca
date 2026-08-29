@@ -559,6 +559,7 @@ const NOTIFICATION_DATA: {
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Screen =
   | "welcome"
+  | "account-type"
   | "signin"
   | "sso"
   | "onboard-nus"
@@ -1216,31 +1217,22 @@ function WelcomeScreen({ onGetStarted }: { onGetStarted: () => void }) {
           {/* Left arrow — hidden on first slide */}
           <button
             onClick={() => setSlide((s) => Math.max(s - 1, 0))}
-            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center transition-opacity z-10"
-            style={{
-              backgroundColor: PLUM_SOFT,
-              opacity: slide > 0 ? 1 : 0,
-              pointerEvents: slide > 0 ? "auto" : "none",
-            }}
+            disabled={slide === 0}
+            aria-label="Previous preview"
+            className="absolute left-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center transition-opacity z-10 shadow-sm"
+            style={{ backgroundColor: WHITE, border:`1.5px solid ${CORAL}`, opacity: slide > 0 ? 1 : 0.35 }}
           >
-            <ChevronLeft
-              size={17}
-              strokeWidth={2.5}
-              style={{ color: PLUM_ARROW }}
-            />
+            <ChevronLeft size={14} strokeWidth={2.5} color={CORAL} />
           </button>
 
           {/* Right arrow — always visible, loops from last to first */}
           <button
             onClick={() => setSlide((s) => (s + 1) % SLIDES.length)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center z-10"
-            style={{ backgroundColor: PLUM_SOFT }}
+            aria-label="Next preview"
+            className="absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center z-10 shadow-sm"
+            style={{ backgroundColor: WHITE, border:`1.5px solid ${CORAL}` }}
           >
-            <ChevronRight
-              size={17}
-              strokeWidth={2.5}
-              style={{ color: PLUM_ARROW }}
-            />
+            <ChevronRight size={14} strokeWidth={2.5} color={CORAL} />
           </button>
         </div>
 
@@ -1273,6 +1265,36 @@ function WelcomeScreen({ onGetStarted }: { onGetStarted: () => void }) {
         >
           Get Started →
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SCREEN: Account type
+// ══════════════════════════════════════════════════════════════════════════════
+function AccountTypeScreen({ onNewUser, onReturning, onBack }: {
+  onNewUser: () => void;
+  onReturning: () => void;
+  onBack: () => void;
+}) {
+  return (
+    <div className="flex flex-col h-full" style={{ backgroundColor: CREAM }}>
+      <StatusBar />
+      <div className="px-5 pt-1"><BackBtn onPress={onBack} /></div>
+      <div className="flex-1 flex flex-col justify-center px-6">
+        <div className="mb-8">
+          <h1 className="text-2xl font-black mb-2" style={{ color: PLUM }}>Welcome to ok!cca</h1>
+          <p className="text-sm leading-relaxed" style={{ color: MUTED }}>Let’s get you to the right place.</p>
+        </div>
+        <div className="space-y-3">
+          <button onClick={onNewUser} className="w-full rounded-2xl px-4 py-4 text-left font-black" style={{ backgroundColor: CORAL, color: PLUM }}>
+            Set up a new account
+          </button>
+          <button onClick={onReturning} className="w-full rounded-2xl px-4 py-4 text-left font-black" style={{ backgroundColor: WHITE, color: PLUM, border:`1.5px solid ${BORDER}` }}>
+            Sign in to existing account
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1358,7 +1380,7 @@ function SignInScreen({
               color: valid ? PLUM : MUTED,
             }}
           >
-            Sign in with NUS
+            Continue with NUS
           </button>
         </div>
       </div>
@@ -8699,7 +8721,14 @@ export default function App() {
           />
 
           {screen === "welcome" && (
-            <WelcomeScreen onGetStarted={() => setScreen("signin")} />
+            <WelcomeScreen onGetStarted={() => setScreen("account-type")} />
+          )}
+          {screen === "account-type" && (
+            <AccountTypeScreen
+              onNewUser={() => { setIsReturning(false); setScreen("signin"); }}
+              onReturning={() => { setIsReturning(true); setScreen("signin"); }}
+              onBack={() => setScreen("welcome")}
+            />
           )}
           {screen === "signin" && (
             <SignInScreen
@@ -8707,20 +8736,14 @@ export default function App() {
                 setUserEmail(email);
                 setScreen("sso");
               }}
-              onBack={() => setScreen("welcome")}
+              onBack={() => setScreen("account-type")}
             />
           )}
           {screen === "sso" && (
             <NusSSOPage
               email={userEmail}
               onLogin={(pw) => {
-                if (pw === "newuser") {
-                  setIsReturning(false);
-                  setScreen("onboard-nus");
-                } else {
-                  setIsReturning(true);
-                  setScreen("main");
-                }
+                setScreen(isReturning ? "main" : "onboard-nus");
               }}
               onBack={() => setScreen("signin")}
             />
