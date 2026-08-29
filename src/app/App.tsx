@@ -7986,53 +7986,19 @@ function CcaDetailPage({
         transform: vis ? "translateX(0)" : "translateX(100%)",
       }}
     >
-      {/* Top bar */}
+      {/* Hero image */}
       <div
-        className="px-4 pt-14 pb-3 flex items-center gap-2 flex-shrink-0"
-        style={{ backgroundColor: CREAM }}
+        className="mx-4 mt-14 rounded-2xl h-44 overflow-hidden relative flex-shrink-0"
+        style={{ backgroundColor: cca.bgColor }}
       >
         <button
           onClick={goBack}
-          className="w-9 h-9 flex items-center justify-center rounded-xl flex-shrink-0"
-          style={{ backgroundColor: CREAM }}
+          aria-label="Back to CCA list"
+          className="absolute top-3 left-3 z-10 w-9 h-9 flex items-center justify-center rounded-xl shadow-sm"
+          style={{ backgroundColor: "rgba(255,255,255,0.88)" }}
         >
           <ChevronLeft size={18} color={PLUM} strokeWidth={2.5} />
         </button>
-        <div
-          className="flex-1 flex items-center px-3 py-2 rounded-2xl"
-          style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}` }}
-        >
-          <span className="text-sm" style={{ color: MUTED }}>
-            {cca.name.toLowerCase()}
-          </span>
-        </div>
-        {/* Filter icon */}
-        <button
-          className="w-9 h-9 flex items-center justify-center rounded-xl"
-          style={{ backgroundColor: CREAM }}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke={MUTED}
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="4" y1="6" x2="20" y2="6" />
-            <line x1="8" y1="12" x2="16" y2="12" />
-            <line x1="11" y1="18" x2="13" y2="18" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Hero image */}
-      <div
-        className="mx-4 rounded-2xl h-44 overflow-hidden relative flex-shrink-0"
-        style={{ backgroundColor: cca.bgColor }}
-      >
         <img
           src={cca.img}
           alt={cca.name}
