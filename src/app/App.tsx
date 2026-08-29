@@ -7722,6 +7722,23 @@ function DetailReviewsTab({
         className="rounded-2xl p-3.5 mb-4"
         style={{ border: `1.5px solid ${BORDER}`, backgroundColor: CREAM }}
       >
+        <p className="text-xs font-black mb-1.5" style={{ color: PLUM }}>
+          Share your experience
+        </p>
+        {/* Review text */}
+        <div
+          className="rounded-xl px-3 py-2.5 mb-3"
+          style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}` }}
+        >
+          <textarea
+            value={newReview}
+            onChange={(e) => setNewReview(e.target.value)}
+            placeholder="Write a review about this CCA…"
+            className="w-full bg-transparent text-[13px] outline-none resize-none"
+            rows={3}
+            style={{ color: PLUM, fontFamily: "'Nunito Sans',sans-serif" }}
+          />
+        </div>
         {/* Position field — hidden when anonymous */}
         {!anonymous && (
           <div
@@ -7731,7 +7748,7 @@ function DetailReviewsTab({
             <input
               value={position}
               onChange={(e) => setPosition(e.target.value)}
-              placeholder="Your position e.g. AY25/26 Member"
+              placeholder="Your position (optional), e.g. AY25/26 Member"
               className="w-full bg-transparent text-xs outline-none"
               style={{ color: PLUM, fontFamily: "'Nunito Sans',sans-serif" }}
             />
@@ -7755,15 +7772,6 @@ function DetailReviewsTab({
             Stay anonymous (hide position)
           </span>
         </button>
-        {/* Review text */}
-        <textarea
-          value={newReview}
-          onChange={(e) => setNewReview(e.target.value)}
-          placeholder="Write a review…"
-          className="w-full bg-transparent text-[13px] outline-none resize-none"
-          rows={2}
-          style={{ color: PLUM, fontFamily: "'Nunito Sans',sans-serif" }}
-        />
         <div className="flex justify-end mt-1">
           <button
             onClick={handleSubmit}
