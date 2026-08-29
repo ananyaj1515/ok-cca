@@ -5,7 +5,7 @@ import {
   Pencil, X, Zap, Flame, Sprout, Star, Camera,
   MessageSquare, ThumbsUp, ThumbsDown, Flag, Plus, ArrowRight, Reply,
   Info, HelpCircle, AlertTriangle,
-  MoreVertical, ListPlus, Trash2
+  MoreVertical, ListPlus, Trash2, Hand, SearchX, Funnel
 } from "lucide-react";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import noBgLogo from "@/imports/nobglogo.png";
@@ -753,7 +753,7 @@ function OnboardNusScreen({ onNext, onBack }: { onNext:(memberships:number[])=>v
       <div className="px-5 pt-1 mb-5"><BackBtn onPress={onBack} /></div>
 
       <div className="flex-1 px-6 overflow-y-auto" style={hideScroll}>
-        <p className="text-3xl font-black mb-0.5" style={{ color:PLUM }}>Hi, Amanda! 👋</p>
+        <p className="text-3xl font-black mb-0.5 flex items-center gap-2" style={{ color:PLUM }}>Hi, Amanda! <Hand size={28} strokeWidth={2.5} /></p>
         <p className="text-sm mb-6 leading-relaxed" style={{ color:MUTED }}>
           We found your CCA memberships from NUS. These will be used to personalise your experience.
         </p>
@@ -1410,9 +1410,7 @@ function DiscoverTab({ saved, onSave, onOpenSheet, initialCategory = "" }: {
             onClick={() => setShowFilter(true)}
             className="w-9 h-9 flex items-center justify-center rounded-xl relative flex-shrink-0"
             style={{ backgroundColor: activeFilters > 0 ? CORAL : WHITE }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={activeFilters > 0 ? FWHITE : PLUM} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
-            </svg>
+            <Funnel size={17} color={activeFilters > 0 ? FWHITE : PLUM} strokeWidth={2.2} />
             {activeFilters > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center" style={{ backgroundColor:PLUM, color:CREAM }}>{activeFilters}</span>
             )}
@@ -1438,7 +1436,7 @@ function DiscoverTab({ saved, onSave, onOpenSheet, initialCategory = "" }: {
         <div className="flex-1 overflow-y-auto px-4 pb-6" style={hideScroll}>
           {query === "" && activeFilters === 0 ? (
             <div className="flex flex-col items-center justify-center py-20">
-              <p className="text-4xl mb-3">🔎</p>
+              <Search size={38} className="mb-3" color={MUTED} strokeWidth={2} />
               <p className="text-sm text-center" style={{ color:MUTED }}>Start typing to search CCAs</p>
             </div>
           ) : results.length > 0 ? (
@@ -1449,6 +1447,7 @@ function DiscoverTab({ saved, onSave, onOpenSheet, initialCategory = "" }: {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-24">
+              <SearchX size={42} className="mb-3" color={MUTED} strokeWidth={1.8} />
               <p className="text-sm text-center" style={{ color:MUTED }}>No matching results found.</p>
             </div>
           )}
@@ -2243,9 +2242,7 @@ function EventsTab({ saved, notifiedDetailEvts, setNotifiedDetailEvts, onTabChan
           className="relative w-9 h-9 rounded-xl flex items-center justify-center shadow-sm"
           style={{ backgroundColor: activeFilterCount > 0 ? CORAL : WHITE }}
         >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={activeFilterCount > 0 ? FWHITE : PLUM} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-          </svg>
+          <Funnel size={17} color={activeFilterCount > 0 ? FWHITE : PLUM} strokeWidth={2.2} />
           {activeFilterCount > 0 && (
             <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black" style={{ backgroundColor:CORAL, color:FWHITE }}>
               {activeFilterCount}
@@ -3379,7 +3376,7 @@ function NotificationsPage({ onBack, read, setRead, items = [] }: {
           <div className="px-5 py-4 space-y-3">
             {items.length === 0 && (
               <div className="flex flex-col items-center justify-center py-24 px-8">
-                <p className="text-5xl mb-4">🔔</p>
+                <Bell size={48} className="mb-4" color={MUTED} strokeWidth={1.8} />
                 <p className="text-base font-black mb-1.5 text-center" style={{ color:PLUM }}>No notifications yet</p>
                 <p className="text-sm text-center leading-relaxed" style={{ color:MUTED }}>
                   Updates on CCA events and deadlines will appear here.
@@ -3427,7 +3424,7 @@ function NotificationsPage({ onBack, read, setRead, items = [] }: {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-24 px-8">
-            <p className="text-5xl mb-4">💬</p>
+            <MessageSquare size={48} className="mb-4" color={MUTED} strokeWidth={1.8} />
             <p className="text-base font-black mb-1.5 text-center" style={{ color:PLUM }}>No messages yet</p>
             <p className="text-sm text-center leading-relaxed" style={{ color:MUTED }}>
               When someone replies to your reviews, their messages will appear here.
@@ -4095,7 +4092,7 @@ function ReviewThreadPage({ review, onBack }: { review: typeof REVIEW_DATA[0]; o
               style={{ color:MUTED }}
               onClick={() => setReplyTarget(review.user)}
             >
-              ✕
+              <X size={12} color={MUTED} strokeWidth={2.5} />
             </button>
           </div>
         )}
