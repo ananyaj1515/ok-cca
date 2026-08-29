@@ -5805,7 +5805,7 @@ function RefinePreferencesPage({
                 onClick={() => setCommitment(id)}
                 className="w-full rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-[0.98]"
                 style={{
-                  backgroundColor: on ? PLUM_SOFT : CREAM,
+                  backgroundColor: on ? WHITE : CREAM,
                   border: `2px solid ${on ? bg : BORDER}`,
                 }}
               >
@@ -7937,7 +7937,7 @@ function CcaDetailPage({
     return () => cancelAnimationFrame(t);
   }, []);
 
-  const [tab, setTab] = React.useState<DetailTab>("home");
+  const [tab, setTab] = React.useState<DetailTab>("about");
   const [threadReview, setThreadReview] = React.useState<
     (typeof REVIEW_DATA)[0] | null
   >(null);
@@ -7953,10 +7953,10 @@ function CcaDetailPage({
   };
 
   const DETAIL_TABS: { id: DetailTab; label: string }[] = [
-    { id: "home", label: "Home" },
     { id: "about", label: "About" },
     { id: "events", label: "Events" },
     { id: "reviews", label: `Reviews (${REVIEW_DATA.length})` },
+    { id: "home", label: "Contact" },
   ];
 
   return (
