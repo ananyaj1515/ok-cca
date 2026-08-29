@@ -343,7 +343,7 @@ function CcaCardSmall({ cca, saved, onSave, onClick }: { cca:CCA; saved:boolean;
 
 function CcaCardGrid({ cca, saved, onSave, onClick }: { cca:CCA; saved:boolean; onSave:()=>void; onClick?:()=>void }) {
   return (
-    <div className="rounded-2xl overflow-hidden shadow-sm cursor-pointer active:scale-[0.97] transition-transform" style={{ backgroundColor:CREAM }} onClick={onClick}>
+    <div className="rounded-2xl overflow-hidden shadow-sm cursor-pointer active:scale-[0.97] transition-transform" style={{ backgroundColor:WHITE }} onClick={onClick}>
       <div className="h-28 relative overflow-hidden" style={{ backgroundColor:cca.bgColor }}>
         <img src={cca.img} alt={cca.name} className="absolute inset-0 w-full h-full object-cover" />
         <button
@@ -545,7 +545,7 @@ function WelcomeScreen({ onGetStarted }: { onGetStarted:()=>void }) {
       {/* Logo */}
       <div className="px-6 pt-3 pb-1 flex items-center gap-3">
         <ImageWithFallback src={noBgLogo} alt="ok!cca" className="w-12 h-12 object-contain" />
-        <h1 className="text-3xl font-black tracking-tight leading-none" style={{ color:PLUM }}>ok!cca</h1>
+        <h1 className="text-3xl font-black tracking-wide"><span style={{ color:PLUM }}>ok!</span><span style={{ color:CORAL }}>cca</span></h1>
       </div>
 
       {/* Swipeable center — slides + dots grouped, vertically centered */}
@@ -648,7 +648,7 @@ function SignInScreen({ onSignIn, onBack }: { onSignIn:(email:string)=>void; onB
           <div className="w-36 h-36 rounded-3xl flex items-center justify-center shadow-md overflow-hidden" style={{ backgroundColor:CREAM, border:`2px solid ${BORDER}` }}>
             <ImageWithFallback src={noBgLogo} alt="ok!cca" className="w-32 h-32 object-contain" />
           </div>
-          <h1 className="text-3xl font-black tracking-tight"><span style={{ color:PLUM }}>ok!</span><span style={{ color:CORAL }}>cca</span></h1>
+          <h1 className="text-3xl font-black tracking-wide"><span style={{ color:PLUM }}>ok!</span><span style={{ color:CORAL }}>cca</span></h1>
         </div>
 
         {/* Form */}
