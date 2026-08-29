@@ -922,41 +922,6 @@ function withExitingItems<T>(
   return result;
 }
 
-// ─── Status bar ──────────────────────────────────────────────────────────────
-function StatusBar({ light = false }) {
-  const c = light ? "rgba(255,255,255,0.8)" : PLUM;
-  return (
-    <div className="flex items-center justify-between px-6 h-12">
-      <span className="text-xs font-bold" style={{ color: c }}>
-        9:41
-      </span>
-      <div className="flex items-center gap-1">
-        <svg width="16" height="10" viewBox="0 0 16 10" fill="none">
-          <rect
-            x="0.5"
-            y="0.5"
-            width="14"
-            height="9"
-            rx="2.5"
-            stroke={c}
-            strokeOpacity="0.4"
-          />
-          <rect x="1.5" y="1.5" width="10" height="7" rx="1.5" fill={c} />
-          <rect
-            x="15.5"
-            y="3"
-            width="1"
-            height="4"
-            rx="0.5"
-            fill={c}
-            fillOpacity="0.4"
-          />
-        </svg>
-      </div>
-    </div>
-  );
-}
-
 // ══════════════════════════════════════════════════════════════════════════════
 // SCREEN: Welcome (3 swipeable slides)
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1162,10 +1127,9 @@ function WelcomeScreen({ onGetStarted }: { onGetStarted: () => void }) {
 
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: CREAM }}>
-      <StatusBar />
 
       {/* Logo */}
-      <div className="px-6 pt-3 pb-1 flex items-center gap-3">
+      <div className="px-6 pt-14 pb-1 flex items-center gap-3">
         <ImageWithFallback
           src={noBgLogo}
           alt="ok!cca"
@@ -1280,11 +1244,12 @@ function AccountTypeScreen({ onNewUser, onReturning, onBack }: {
 }) {
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: CREAM }}>
-      <StatusBar />
-      <div className="px-5 pt-1"><BackBtn onPress={onBack} /></div>
+      <div className="px-5 pt-14"><BackBtn onPress={onBack} /></div>
       <div className="flex-1 flex flex-col justify-center px-6">
         <div className="mb-8">
-          <h1 className="text-2xl font-black mb-2" style={{ color: PLUM }}>Welcome to ok!cca</h1>
+          <h1 className="text-2xl font-black mb-2" style={{ color: PLUM }}>
+            Welcome to <span style={{ color: PLUM }}>ok!</span><span style={{ color: CORAL }}>cca</span>
+          </h1>
           <p className="text-sm leading-relaxed" style={{ color: MUTED }}>Let’s get you to the right place.</p>
         </div>
         <div className="space-y-3">
@@ -1319,8 +1284,7 @@ function SignInScreen({
   const [touched, setTouched] = useState(false);
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: CREAM }}>
-      <StatusBar />
-      <div className="px-5 pt-1 mb-2">
+      <div className="px-5 pt-14 mb-2">
         <BackBtn onPress={onBack} />
       </div>
 
@@ -1405,8 +1369,7 @@ function NusSSOPage({
   const [password, setPassword] = useState("");
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: CREAM }}>
-      <StatusBar />
-      <div className="px-5 pt-1 mb-2">
+      <div className="px-5 pt-14 mb-2">
         <BackBtn onPress={onBack} />
       </div>
 
@@ -1500,14 +1463,16 @@ const SSO_MEMBERSHIPS = [
 function OnboardNusScreen({
   onNext,
   onBack,
+  email,
 }: {
   onNext: (memberships: number[]) => void;
   onBack: () => void;
+  email: string;
 }) {
+  const displayName = email.split("@")[0] || "there";
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: CREAM }}>
-      <StatusBar />
-      <div className="px-5 pt-1 mb-5">
+      <div className="px-5 pt-14 mb-5">
         <BackBtn onPress={onBack} />
       </div>
 
@@ -1516,7 +1481,7 @@ function OnboardNusScreen({
           className="text-3xl font-black mb-0.5 flex items-center gap-2"
           style={{ color: PLUM }}
         >
-          Hi, Amanda! <Hand size={28} strokeWidth={2.5} />
+          Hi, {displayName}! <Hand size={28} strokeWidth={2.5} />
         </p>
         <p className="text-sm mb-6 leading-relaxed" style={{ color: MUTED }}>
           We found your CCA memberships from NUS. These will be used to
@@ -1629,9 +1594,8 @@ function OnboardInterestsScreen({
 
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: CREAM }}>
-      <StatusBar />
       {/* Header with progress strip top-right */}
-      <div className="px-5 pt-1 mb-4 flex items-center justify-between">
+      <div className="px-5 pt-14 mb-4 flex items-center justify-between">
         <BackBtn onPress={onBack} />
         <ProgressStrip step={0} />
       </div>
@@ -1775,9 +1739,8 @@ function OnboardCommitmentScreen({
   ];
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: CREAM }}>
-      <StatusBar />
       {/* Header with progress strip top-right */}
-      <div className="px-5 pt-1 mb-4 flex items-center justify-between">
+      <div className="px-5 pt-14 mb-4 flex items-center justify-between">
         <BackBtn onPress={onBack} />
         <ProgressStrip step={1} />
       </div>
@@ -1882,9 +1845,8 @@ function OnboardProfileScreen({
 
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: CREAM }}>
-      <StatusBar />
       {/* Header with progress strip top-right */}
-      <div className="px-5 pt-1 mb-4 flex items-center justify-between">
+      <div className="px-5 pt-14 mb-4 flex items-center justify-between">
         <BackBtn onPress={onBack} />
         <ProgressStrip step={2} />
       </div>
@@ -6462,7 +6424,6 @@ function CcaBottomSheet({
           {/* Info rows */}
           <div className="flex items-center gap-2 flex-wrap mb-3">
             <CommitBadge level={cca.commitment} />
-            <UrgencyPill days={cca.deadlineDays} />
             <span
               className="text-[10px] font-semibold"
               style={{ color: MUTED }}
@@ -8716,6 +8677,7 @@ export default function App() {
           )}
           {screen === "onboard-nus" && (
             <OnboardNusScreen
+              email={userEmail}
               onNext={(memberships) => {
                 setUserMemberships(memberships);
                 setScreen("onboard-interests");
