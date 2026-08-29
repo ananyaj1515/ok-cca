@@ -324,9 +324,9 @@ function CcaCardSmall({ cca, saved, onSave, onClick }: { cca:CCA; saved:boolean;
         <button
           onClick={e => { e.stopPropagation(); onSave(); }}
           className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-colors"
-          style={{ backgroundColor: saved ? CORAL : "rgba(0,0,0,0.42)" }}
+          style={{ backgroundColor: saved ? CARD_OVERLAY : "rgba(0,0,0,0.42)" }}
         >
-          <Heart size={13} fill={saved ? FWHITE : "none"} color={FWHITE} strokeWidth={2} />
+          <Heart size={13} fill={saved ? CORAL : "none"} color={saved ? CORAL : FWHITE} strokeWidth={2} />
         </button>
       </div>
       <div className="p-2.5">
@@ -349,9 +349,9 @@ function CcaCardGrid({ cca, saved, onSave, onClick }: { cca:CCA; saved:boolean; 
         <button
           onClick={e => { e.stopPropagation(); onSave(); }}
           className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-          style={{ backgroundColor: saved ? CORAL : "rgba(0,0,0,0.42)" }}
+          style={{ backgroundColor: saved ? CARD_OVERLAY : "rgba(0,0,0,0.42)" }}
         >
-          <Heart size={15} fill={saved ? FWHITE : "none"} color={FWHITE} strokeWidth={2} />
+          <Heart size={15} fill={saved ? CORAL : "none"} color={saved ? CORAL : FWHITE} strokeWidth={2} />
         </button>
       </div>
       <div className="p-3">
@@ -4339,7 +4339,7 @@ function CcaDetailPage({ cca, saved, onSave, onBack, onMainTabChange, username, 
           <p className="text-xl font-black leading-tight" style={{ color:PLUM }}>{cca.name}</p>
           <p className="text-sm mt-0.5" style={{ color:MUTED }}>{cca.category}</p>
         </div>
-        <button onClick={e => { e.stopPropagation(); onSave(); }} className="w-9 h-9 flex items-center justify-center rounded-full mt-1 transition-colors" style={{ backgroundColor: PEACH }}>
+        <button onClick={e => { e.stopPropagation(); onSave(); }} className="w-9 h-9 flex items-center justify-center rounded-full mt-1 transition-colors" style={{ backgroundColor: saved ? LIGHT_CORAL : WHITE }}>
           <Heart size={18} fill={saved ? CORAL : "none"} color={saved ? CORAL : MUTED} strokeWidth={saved ? 0 : 2} />
         </button>
       </div>
