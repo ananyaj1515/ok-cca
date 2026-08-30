@@ -5242,6 +5242,31 @@ function EventsTab({
     [saved, notifiedEvts, keptEvtKeys, removedEvtKeys],
   );
 
+  // Non-wishlist CCAs that already have events on the user's Events list
+  const nonWishlistCcas = React.useMemo(() => {
+    const ids = new Set<number>();
+    baseEvents.forEach((ev) => {
+      if (!saved.has(ev.ccaId)) ids.add(ev.ccaId);
+    });
+    const addDetailCca = (ccaId: number, idx: number) => {
+      if (saved.has(ccaId)) return;
+      if (removedEvtKeys.has(String(-(ccaId * 100 + idx)))) return;
+      if (!CCA_DETAIL_EVENTS[ccaId]?.[idx]) return;
+      ids.add(ccaId);
+    };
+    if (notifiedDetailEvts) {
+      notifiedDetailEvts.forEach((key) => {
+        const [ccaIdStr, idxStr] = key.split("-");
+        addDetailCca(parseInt(ccaIdStr, 10), parseInt(idxStr, 10));
+      });
+    }
+    keptEvtKeys.forEach((k) => {
+      const id = Number(k);
+      if (id < 0) addDetailCca(Math.floor(-id / 100), -id % 100);
+    });
+    return CCAS.filter((c) => ids.has(c.id));
+  }, [baseEvents, saved, notifiedDetailEvts, keptEvtKeys, removedEvtKeys]);
+
   const visibleEvents = React.useMemo(() => {
     let evs = baseEvents;
     if (filterNotified) evs = evs.filter((ev) => notifiedEvts.has(ev.id));
@@ -5295,13 +5320,19 @@ function EventsTab({
     if (notifiedDetailEvts) {
       [...notifiedDetailEvts].forEach((key) => {
         const [ccaIdStr, idxStr] = key.split("-");
-        addDetail(parseInt(ccaIdStr), parseInt(idxStr));
+        const ccaId = parseInt(ccaIdStr);
+        if (filterCcaIds.size > 0 && !filterCcaIds.has(ccaId)) return;
+        addDetail(ccaId, parseInt(idxStr));
       });
     }
     if (!filterNotified) {
       keptEvtKeys.forEach((k) => {
         const id = Number(k);
-        if (id < 0) addDetail(Math.floor(-id / 100), -id % 100);
+        if (id < 0) {
+          const ccaId = Math.floor(-id / 100);
+          if (filterCcaIds.size > 0 && !filterCcaIds.has(ccaId)) return;
+          addDetail(ccaId, -id % 100);
+        }
       });
     }
     return evs;
@@ -5311,6 +5342,7 @@ function EventsTab({
     removedEvtKeys,
     keptEvtKeys,
     filterNotified,
+    filterCcaIds,
   ]);
 
   // Sort all events by date ascending
@@ -5752,6 +5784,40 @@ function EventsTab({
       return n;
     });
 
+  const renderCcaFilterRow = (cca: CCA) => {
+    const on = filterCcaIds.has(cca.id);
+    return (
+      <button
+        key={cca.id}
+        onClick={() => toggleFilterCca(cca.id)}
+        className="w-full flex items-center gap-3 rounded-2xl px-4 py-3.5"
+        style={{
+          backgroundColor: WHITE,
+          border: `1.5px solid ${on ? CORAL : BORDER}`,
+        }}
+      >
+        <div
+          className="w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+          style={{
+            borderColor: on ? CORAL : BORDER,
+            backgroundColor: on ? CORAL : "transparent",
+          }}
+        >
+          {on && <Check size={11} color={FWHITE} strokeWidth={3} />}
+        </div>
+        <span
+          className="text-sm font-bold flex-1 text-left"
+          style={{ color: PLUM }}
+        >
+          {cca.name}
+        </span>
+        <span className="text-xs" style={{ color: MUTED }}>
+          {cca.category}
+        </span>
+      </button>
+    );
+  };
+
   const activeFilterCount = (filterNotified ? 1 : 0) + filterCcaIds.size;
 
   return (
@@ -6190,41 +6256,24 @@ function EventsTab({
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {wishlistCcas.map((cca) => {
-                    const on = filterCcaIds.has(cca.id);
-                    return (
-                      <button
-                        key={cca.id}
-                        onClick={() => toggleFilterCca(cca.id)}
-                        className="w-full flex items-center gap-3 rounded-2xl px-4 py-3.5"
-                        style={{
-                          backgroundColor: WHITE,
-                          border: `1.5px solid ${on ? CORAL : BORDER}`,
-                        }}
-                      >
-                        <div
-                          className="w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors"
-                          style={{
-                            borderColor: on ? CORAL : BORDER,
-                            backgroundColor: on ? CORAL : "transparent",
-                          }}
-                        >
-                          {on && (
-                            <Check size={11} color={FWHITE} strokeWidth={3} />
-                          )}
-                        </div>
-                        <span
-                          className="text-sm font-bold flex-1 text-left"
-                          style={{ color: PLUM }}
-                        >
-                          {cca.name}
-                        </span>
-                        <span className="text-xs" style={{ color: MUTED }}>
-                          {cca.category}
-                        </span>
-                      </button>
-                    );
-                  })}
+                  {wishlistCcas.map(renderCcaFilterRow)}
+                </div>
+              )}
+            </div>
+            <div>
+              <p
+                className="text-xs font-black uppercase tracking-wider mb-3"
+                style={{ color: MUTED }}
+              >
+                Non-wishlist CCAs
+              </p>
+              {nonWishlistCcas.length === 0 ? (
+                <p className="text-sm" style={{ color: MUTED }}>
+                  No non-wishlisted CCAs with events.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {nonWishlistCcas.map(renderCcaFilterRow)}
                 </div>
               )}
             </div>
