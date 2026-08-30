@@ -4956,8 +4956,18 @@ function EventsTab({
   const [exitingEvts, setExitingEvts] = useState<
     { item: (typeof EVENTS)[0]; index: number; section: "upcoming" | "past" }[]
   >([]);
+  const [highlightedEvtIds, setHighlightedEvtIds] = useState<Set<number>>(
+    new Set(),
+  );
+  const [emptyDateMsg, setEmptyDateMsg] = useState<string | null>(null);
   const evtExitTimers = React.useRef(
     new Map<number, ReturnType<typeof setTimeout>>(),
+  );
+  const highlightTimer = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const emptyDateTimer = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
   );
 
   const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -5148,19 +5158,66 @@ function EventsTab({
     container.scrollTo({ top: elTop - 8, behavior: "smooth" });
   };
 
-  // When user taps a calendar day, find the nearest upcoming event on or after that date
+  // When user taps a calendar day: exact-date match → scroll + 3s highlight; else brief toast
   const handleDayTap = (day: Date, i: number) => {
     setSelIdx(i);
+    if (sortedEvents.length === 0) return;
+
     const dayStart = new Date(day);
     dayStart.setHours(0, 0, 0, 0);
-    const target = upcomingEvents.find(
-      (ev) => parseEvDate(ev.date) >= dayStart,
+    const key = dateKey(dayStart);
+    const matches = sortedEvents.filter(
+      (ev) => dateKey(parseEvDate(ev.date)) === key,
     );
-    if (target) {
-      if (!upcomingOpen) setUpcomingOpen(true);
-      setTimeout(() => scrollToEvent(target.id), 60);
+
+    if (matches.length === 0) {
+      if (highlightTimer.current) clearTimeout(highlightTimer.current);
+      setHighlightedEvtIds(new Set());
+      const isPastDay = dayStart < todayStart;
+      setEmptyDateMsg(
+        isPastDay
+          ? "No Past events on this date"
+          : "No Upcoming events on this date",
+      );
+      if (emptyDateTimer.current) clearTimeout(emptyDateTimer.current);
+      emptyDateTimer.current = setTimeout(() => {
+        setEmptyDateMsg(null);
+        emptyDateTimer.current = null;
+      }, 1200);
+      return;
     }
+
+    if (emptyDateTimer.current) {
+      clearTimeout(emptyDateTimer.current);
+      emptyDateTimer.current = null;
+    }
+    setEmptyDateMsg(null);
+
+    const isPast = parseEvDate(matches[0].date) < todayStart;
+    const needsOpen = isPast ? !pastOpen : !upcomingOpen;
+    if (isPast) {
+      if (!pastOpen) setPastOpen(true);
+    } else if (!upcomingOpen) {
+      setUpcomingOpen(true);
+    }
+
+    setHighlightedEvtIds(new Set(matches.map((m) => m.id)));
+    if (highlightTimer.current) clearTimeout(highlightTimer.current);
+    highlightTimer.current = setTimeout(() => {
+      setHighlightedEvtIds(new Set());
+      highlightTimer.current = null;
+    }, 3000);
+
+    setTimeout(() => scrollToEvent(matches[0].id), needsOpen ? 100 : 60);
   };
+
+  React.useEffect(
+    () => () => {
+      if (highlightTimer.current) clearTimeout(highlightTimer.current);
+      if (emptyDateTimer.current) clearTimeout(emptyDateTimer.current);
+    },
+    [],
+  );
 
   React.useEffect(() => {
     setSelIdx(weekOffset === 0 ? (TODAY.getDay() + 6) % 7 : 0);
@@ -5264,6 +5321,7 @@ function EventsTab({
   const renderEvent = (ev: (typeof EVENTS)[0], exiting = false) => {
     const evKey = String(ev.id);
     const on = isBellOn(ev);
+    const highlighted = highlightedEvtIds.has(ev.id);
     return (
       <CollapsingItem key={ev.id} exiting={exiting}>
         <div className="relative">
@@ -5272,8 +5330,19 @@ function EventsTab({
               if (el) eventRefs.current.set(ev.id, el);
               else eventRefs.current.delete(ev.id);
             }}
-            className="rounded-xl p-4 flex gap-3 items-center cursor-pointer active:opacity-80 transition-opacity"
-            style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}` }}
+            className="rounded-xl p-4 flex gap-3 items-center cursor-pointer active:opacity-80"
+            style={{
+              backgroundColor: highlighted
+                ? isDark
+                  ? "rgba(127, 29, 29, 0.40)"
+                  : "#FEE2E2"
+                : WHITE,
+              border: `1.5px solid ${
+                highlighted ? (isDark ? "#991B1B" : "#FECACA") : BORDER
+              }`,
+              transition:
+                "background-color 0.25s ease, border-color 0.25s ease, opacity 0.15s ease",
+            }}
             onClick={() =>
               setSelectedEvent({
                 title: ev.title,
@@ -5382,7 +5451,10 @@ function EventsTab({
   const activeFilterCount = (filterNotified ? 1 : 0) + filterCcaIds.size;
 
   return (
-    <div className="h-full flex flex-col" style={{ backgroundColor: CREAM }}>
+    <div
+      className="h-full flex flex-col relative"
+      style={{ backgroundColor: CREAM }}
+    >
       {/* Header */}
       <div
         className="px-5 pt-14 pb-3 flex-shrink-0 flex items-end justify-between"
@@ -5732,6 +5804,34 @@ function EventsTab({
                 Remove
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Brief toast when tapped date has no events */}
+      {emptyDateMsg && (
+        <div
+          className="absolute inset-0 z-[65] flex items-center justify-center pointer-events-none px-8"
+          aria-live="polite"
+        >
+          <style>{`
+            @keyframes evtEmptyToast {
+              0% { opacity: 0; transform: translateY(4px); }
+              12% { opacity: 1; transform: translateY(0); }
+              75% { opacity: 1; transform: translateY(0); }
+              100% { opacity: 0; transform: translateY(-2px); }
+            }
+          `}</style>
+          <div
+            className="px-4 py-2.5 rounded-2xl shadow-lg text-sm font-bold text-center"
+            style={{
+              backgroundColor: WHITE,
+              color: PLUM,
+              border: `1.5px solid ${BORDER}`,
+              animation: "evtEmptyToast 1.2s ease forwards",
+            }}
+          >
+            {emptyDateMsg}
           </div>
         </div>
       )}
