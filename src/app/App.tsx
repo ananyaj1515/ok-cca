@@ -2663,14 +2663,10 @@ function OnboardNusScreen({
 
       <div className="flex-1 px-6 overflow-y-auto" style={hideScroll}>
         <p
-          className="text-3xl font-black mb-0.5 flex items-center gap-2"
+          className="text-3xl font-black mb-3 flex items-center gap-2"
           style={{ color: PLUM }}
         >
           Hi, {displayName}! <Hand size={28} strokeWidth={2.5} />
-        </p>
-        <p className="text-sm mb-6 leading-relaxed" style={{ color: MUTED }}>
-          We found your CCA memberships from NUS. These will be used to
-          personalise your experience.
         </p>
 
         <p
@@ -2732,8 +2728,7 @@ function OnboardNusScreen({
           style={{ backgroundColor: LIGHT_MINT, border: `1px solid ${BORDER}` }}
         >
           <p className="text-xs leading-relaxed" style={{ color: PLUM }}>
-            These memberships are automatically fetched from your NUS student
-            records.
+            We found your CCA memberships from NUS. These will be used to personalise your experience.
           </p>
         </div>
       </div>
@@ -3113,13 +3108,16 @@ function OnboardProfileScreen({
         </p>
 
         {/* Preview card */}
+        <p
+          className="text-xs font-black mb-2 uppercase tracking-wide"
+          style={{ color: MUTED }}
+        >
+          How you appear in reviews
+        </p>
         <div
           className="rounded-2xl p-4 mb-4"
           style={{ backgroundColor: LIGHT_GOLD, border: `1px solid ${BORDER}` }}
         >
-          <p className="text-xs font-bold mb-3" style={{ color: MUTED }}>
-            How you appear in reviews
-          </p>
           <div className="flex items-center gap-3">
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl"
@@ -3331,14 +3329,14 @@ function HomeTab({
                 strokeWidth={1.8}
               />
               <p className="text-sm font-black mb-1" style={{ color: PLUM }}>
-                No upcoming events
+                No upcoming events yet
               </p>
               <p
                 className="text-xs leading-relaxed mb-3"
                 style={{ color: MUTED }}
               >
-                Discover CCAs and add them to your Wishlist to see upcoming
-                events.
+                Discover CCAs and add to your Events calendar to see upcoming
+                events here.
               </p>
             </div>
           ) : (
@@ -5649,7 +5647,7 @@ function EventsTab({
             Events
           </h1>
           <p className="text-sm" style={{ color: "rgba(255,255,255,0.78)" }}>
-            From your wishlisted CCAs
+          Shortlist and manage your CCA events here
           </p>
         </div>
         <button
@@ -7668,8 +7666,7 @@ function NotificationsPage({
               className="text-sm text-center leading-relaxed"
               style={{ color: MUTED }}
             >
-              When someone replies to your reviews, their messages will appear
-              here.
+              When someone replies to your reviews, you will be notified here.
             </p>
           </div>
         )}
