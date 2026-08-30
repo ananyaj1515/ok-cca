@@ -1978,6 +1978,7 @@ function SwipeToRemove({
   onSwipeStart?: () => void;
   borderColor?: string;
 }) {
+  const trackRef = React.useRef<HTMLDivElement>(null);
   const offsetRef = React.useRef(0);
   const startXRef = React.useRef(0);
   const startYRef = React.useRef(0);
@@ -1987,6 +1988,13 @@ function SwipeToRemove({
   const movedRef = React.useRef(false);
   const [offset, setOffset] = React.useState(0);
   const [dragging, setDragging] = React.useState(false);
+
+  const onRemoveRef = React.useRef(onRemove);
+  const onRevealedChangeRef = React.useRef(onRevealedChange);
+  const onSwipeStartRef = React.useRef(onSwipeStart);
+  onRemoveRef.current = onRemove;
+  onRevealedChangeRef.current = onRevealedChange;
+  onSwipeStartRef.current = onSwipeStart;
 
   const setOff = (v: number) => {
     offsetRef.current = v;
@@ -2008,60 +2016,115 @@ function SwipeToRemove({
     const shouldConfirm = x < -SWIPE_REMOVE_W - 12;
     if (shouldReveal) {
       setOff(-SWIPE_REMOVE_W);
-      onRevealedChange(true);
-      if (shouldConfirm) onRemove();
+      onRevealedChangeRef.current(true);
+      if (shouldConfirm) onRemoveRef.current();
     } else {
       setOff(0);
-      onRevealedChange(false);
+      onRevealedChangeRef.current(false);
     }
   };
 
-  const onPointerDown = (e: React.PointerEvent) => {
-    if (e.pointerType === "mouse" && e.button !== 0) return;
+  const begin = (x: number, y: number) => {
     draggingRef.current = true;
     axisRef.current = "undecided";
     movedRef.current = false;
-    startXRef.current = e.clientX;
-    startYRef.current = e.clientY;
+    startXRef.current = x;
+    startYRef.current = y;
     startOffRef.current = offsetRef.current;
   };
 
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!draggingRef.current) return;
-    const dx = e.clientX - startXRef.current;
-    const dy = e.clientY - startYRef.current;
+  /** Returns true once the gesture is locked to horizontal swipe. */
+  const move = (x: number, y: number) => {
+    if (!draggingRef.current) return false;
+    const dx = x - startXRef.current;
+    const dy = y - startYRef.current;
     if (axisRef.current === "undecided") {
-      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return false;
       if (Math.abs(dx) >= Math.abs(dy)) {
         axisRef.current = "x";
         setDragging(true);
-        onSwipeStart?.();
-        try {
-          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-        } catch {
-          /* ignore */
-        }
+        onSwipeStartRef.current?.();
       } else {
         axisRef.current = "y";
         draggingRef.current = false;
-        return;
+        return false;
       }
     }
-    if (axisRef.current !== "x") return;
+    if (axisRef.current !== "x") return false;
     movedRef.current = true;
     const next = Math.min(
       12,
       Math.max(startOffRef.current + dx, -SWIPE_REMOVE_W - 28),
     );
     setOff(next);
+    return true;
   };
 
-  const onPointerUp = () => {
+  const end = () => {
     if (axisRef.current === "x") finish();
     else {
       draggingRef.current = false;
       setDragging(false);
     }
+  };
+
+  // Native non-passive touchmove: React delegates touch events as passive, so
+  // preventDefault() cannot stop the parent list from stealing the swipe on iOS.
+  React.useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (!t) return;
+      begin(t.clientX, t.clientY);
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (!t) return;
+      if (move(t.clientX, t.clientY) && e.cancelable) e.preventDefault();
+    };
+
+    const onTouchEnd = () => end();
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false, capture: true });
+    el.addEventListener("touchend", onTouchEnd);
+    el.addEventListener("touchcancel", onTouchEnd);
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove, true);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchcancel", onTouchEnd);
+    };
+    // begin/move/end only close over refs + stable setState
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    // Touch is handled by native listeners so iOS pointercancel cannot abort it
+    if (e.pointerType === "touch") return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    begin(e.clientX, e.clientY);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (e.pointerType === "touch") return;
+    if (!draggingRef.current) return;
+    const wasLocked = axisRef.current === "x";
+    if (move(e.clientX, e.clientY) && !wasLocked) {
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+    }
+  };
+
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (e.pointerType === "touch") return;
+    end();
   };
 
   return (
@@ -2099,13 +2162,15 @@ function SwipeToRemove({
 
       {/* Foreground card — slides over the tray; right edge goes flush while open */}
       <div
+        ref={trackRef}
         className="relative z-[1]"
         style={{
           transform: `translateX(${offset}px)`,
           transition: dragging ? "none" : "transform 0.22s ease-out",
-          touchAction: "pan-y",
+          touchAction: dragging ? "none" : "pan-y",
           userSelect: dragging ? "none" : undefined,
           WebkitUserSelect: dragging ? "none" : undefined,
+          WebkitTouchCallout: "none",
         }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
