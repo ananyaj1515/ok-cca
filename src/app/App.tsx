@@ -3947,29 +3947,24 @@ function DiscoverTab({
   saved,
   onSave,
   onOpenSheet,
-  initialCategory = "",
+  applied,
+  onAppliedChange,
+  searchMode,
+  onSearchModeChange,
 }: {
   saved: Set<number>;
   onSave: (id: number) => void;
   onOpenSheet: (cca: CCA) => void;
-  initialCategory?: string;
+  applied: DiscFilters;
+  onAppliedChange: (f: DiscFilters) => void;
+  searchMode: boolean;
+  onSearchModeChange: (v: boolean) => void;
 }) {
-  const [searchMode, setSearchMode] = useState(!!initialCategory);
   const [query, setQuery] = useState("");
   const [showFilter, setShowFilter] = useState(false);
-  const [applied, setApplied] = useState<DiscFilters>(
-    initialCategory
-      ? { ...emptyFilters(), categories: new Set([initialCategory]) }
-      : emptyFilters(),
-  );
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const results = CCAS.filter((c) => {
-    const q = query.toLowerCase();
-    const matchQ =
-      !query ||
-      c.name.toLowerCase().includes(q) ||
-      c.category.toLowerCase().includes(q);
+  const filtered = CCAS.filter((c) => {
     const matchCat =
       applied.categories.size === 0 ||
       [...applied.categories].some(
@@ -3979,19 +3974,26 @@ function DiscoverTab({
       );
     const matchCommit =
       !applied.commitment || c.commitment === applied.commitment;
-    return matchQ && matchCat && matchCommit;
+    return matchCat && matchCommit;
+  });
+  const results = filtered.filter((c) => {
+    const q = query.toLowerCase();
+    return (
+      !query ||
+      c.name.toLowerCase().includes(q) ||
+      c.category.toLowerCase().includes(q)
+    );
   });
 
   const activeFilters = filterCount(applied);
 
   const enterSearch = () => {
-    setSearchMode(true);
+    onSearchModeChange(true);
     setTimeout(() => inputRef.current?.focus(), 50);
   };
   const exitSearch = () => {
-    setSearchMode(false);
+    onSearchModeChange(false);
     setQuery("");
-    setApplied(emptyFilters());
   };
 
   // Filter page overlays the whole tab
@@ -4000,7 +4002,7 @@ function DiscoverTab({
       <FilterPage
         initial={applied}
         onApply={(f) => {
-          setApplied(f);
+          onAppliedChange(f);
           setShowFilter(false);
         }}
         onBack={() => setShowFilter(false)}
@@ -4031,9 +4033,7 @@ function DiscoverTab({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={
-                applied.categories.size === 1 && !query
-                  ? `Search ${[...applied.categories][0]}`
-                  : "Search all CCAs"
+                activeFilters > 0 ? "Search in results" : "Search all CCAs"
               }
               className="flex-1 bg-transparent text-sm outline-none"
               style={{ color: PLUM, fontFamily: "'Nunito Sans',sans-serif" }}
@@ -4065,55 +4065,9 @@ function DiscoverTab({
           </button>
         </div>
 
-        {/* Active filter pills */}
-        {activeFilters > 0 && (
-          <div
-            className="px-4 pb-2 flex gap-2 overflow-x-auto flex-shrink-0"
-            style={hideScroll}
-          >
-            {[...applied.categories].map((c) => (
-              <span
-                key={c}
-                className="px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap"
-                style={{ backgroundColor: LIGHT_PEACH, color: PEACH }}
-              >
-                {c}
-              </span>
-            ))}
-            {applied.commitment && (
-              <span
-                className="px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap"
-                style={{ backgroundColor: LIGHT_PEACH, color: PEACH }}
-              >
-                {applied.commitment} commitment
-              </span>
-            )}
-            {applied.experience && (
-              <span
-                className="px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap"
-                style={{ backgroundColor: LIGHT_PEACH, color: PEACH }}
-              >
-                {applied.experience}
-              </span>
-            )}
-          </div>
-        )}
-
         {/* Results */}
         <div className="flex-1 overflow-y-auto px-4 pb-6" style={hideScroll}>
-          {query === "" && activeFilters === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <Search
-                size={38}
-                className="mb-3"
-                color={MUTED}
-                strokeWidth={2}
-              />
-              <p className="text-sm text-center" style={{ color: MUTED }}>
-                Start typing to search CCAs
-              </p>
-            </div>
-          ) : results.length > 0 ? (
+          {results.length > 0 ? (
             <div className="grid grid-cols-2 gap-3">
               {results.map((cca) => (
                 <CcaCardGrid
@@ -4173,9 +4127,9 @@ function DiscoverTab({
             <button
               key={cat.id}
               onClick={() => {
-                setApplied({
-                  ...emptyFilters(),
-                  categories: new Set([cat.label]),
+                onAppliedChange({
+                  ...applied,
+                  categories: new Set([...applied.categories, cat.label]),
                 });
                 enterSearch();
               }}
@@ -10851,12 +10805,27 @@ function MainApp({
       ...prev,
     ]);
   };
-  // Discover category navigation
-  const [discoverKey, setDiscoverKey] = useState(0);
-  const [discoverInitialCategory, setDiscoverInitialCategory] = useState("");
+  // Discover filters persist across tab switches
+  const [discoverFilters, setDiscoverFilters] = useState<DiscFilters>(
+    emptyFilters,
+  );
+  const [discoverSearchMode, setDiscoverSearchMode] = useState(false);
+  const handleTabChange = (t: Tab) => {
+    if (t === "discover") {
+      setDiscoverSearchMode(filterCount(discoverFilters) > 0);
+    }
+    setTab(t);
+  };
   const openDiscoverWithCategory = (cat: string) => {
-    setDiscoverInitialCategory(cat);
-    setDiscoverKey((k) => k + 1);
+    if (cat) {
+      setDiscoverFilters({
+        ...emptyFilters(),
+        categories: new Set([cat]),
+      });
+      setDiscoverSearchMode(true);
+    } else {
+      setDiscoverSearchMode(false);
+    }
     setDetailCca(null);
     setTab("discover");
   };
@@ -10977,7 +10946,7 @@ function MainApp({
           <HomeTab
             saved={saved}
             onSave={handleSave}
-            onTabChange={setTab}
+            onTabChange={handleTabChange}
             onOpenSheet={setSheetCca}
             onNotifications={() => setShowNotifications(true)}
             onForYou={() => setShowForYou(true)}
@@ -10989,11 +10958,13 @@ function MainApp({
         )}
         {tab === "discover" && (
           <DiscoverTab
-            key={discoverKey}
             saved={saved}
             onSave={handleSave}
             onOpenSheet={setSheetCca}
-            initialCategory={discoverInitialCategory}
+            applied={discoverFilters}
+            onAppliedChange={setDiscoverFilters}
+            searchMode={discoverSearchMode}
+            onSearchModeChange={setDiscoverSearchMode}
           />
         )}
         {tab === "wishlist" && (
@@ -11010,7 +10981,7 @@ function MainApp({
             saved={saved}
             notifiedDetailEvts={notifiedDetailEvts}
             setNotifiedDetailEvts={setNotifiedDetailEvts}
-            onTabChange={setTab}
+            onTabChange={handleTabChange}
             notifiedEvts={notifiedEvts}
             setNotifiedEvts={setNotifiedEvts}
             removedEvtKeys={removedEvtKeys}
@@ -11046,7 +11017,7 @@ function MainApp({
           />
         )}
       </div>
-      <BottomNav tab={tab} onChange={setTab} />
+      <BottomNav tab={tab} onChange={handleTabChange} />
 
       {/* Pending remove modal (CCA is in a list, triggered from heart toggle outside WishlistTab) */}
       {pendingRemoveCca && (
@@ -11248,7 +11219,7 @@ function MainApp({
             onBack={() => setDetailCca(null)}
             onMainTabChange={(t) => {
               setDetailCca(null);
-              setTab(t);
+              handleTabChange(t);
             }}
             username={username}
             avatar={avatar}
