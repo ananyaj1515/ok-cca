@@ -1213,6 +1213,17 @@ const REVIEW_DATA = [
   },
 ];
 
+type UserReview = (typeof REVIEW_DATA)[number] & { isOwner?: boolean };
+type UserReply = {
+  id: number;
+  user: string;
+  year: string;
+  isExco: boolean;
+  upvotes: number;
+  text: string;
+  isOwner?: boolean;
+};
+
 const REVIEW_THREADS: Record<
   number,
   {
@@ -6612,8 +6623,8 @@ function NotificationSettingsPage({
           style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}` }}
         >
           <Row
-            label="Review Replies"
-            desc="When someone replies to your CCA reviews"
+            label="Review Activity"
+            desc="Replies and likes for your CCA reviews"
             value={settings.reviewReply}
             field="reviewReply"
           />
@@ -7656,7 +7667,7 @@ function NotificationsPage({
     const t = requestAnimationFrame(() => setVis(true));
     return () => cancelAnimationFrame(t);
   }, []);
-  const [activeTab, setActiveTab] = React.useState<"updates" | "messages">(
+  const [activeTab, setActiveTab] = React.useState<"updates" | "reviews">(
     "updates",
   );
 
@@ -7666,9 +7677,11 @@ function NotificationsPage({
   };
 
   const { isDark } = useDark();
-  const tabUnreadCount =
-    activeTab === "updates" ? items.filter((n) => !read.has(n.id)).length : 0;
-  const unreadCount = items.filter((n) => !read.has(n.id)).length;
+  const reviewItems = items.filter((n) => n.type.startsWith("review"));
+  const updateItems = items.filter((n) => !n.type.startsWith("review"));
+  const activeItems = activeTab === "updates" ? updateItems : reviewItems;
+  const tabUnreadCount = activeItems.filter((n) => !read.has(n.id)).length;
+  const unreadCount = updateItems.filter((n) => !read.has(n.id)).length;
 
   const iconForType = (type: string) => {
     if (type === "deadline")
@@ -7684,6 +7697,12 @@ function NotificationsPage({
         color: "#3B82F6",
       };
     if (type === "wishlist") return { bg: PEACH, icon: Heart, color: PLUM };
+    if (type.startsWith("review"))
+      return {
+        bg: isDark ? "rgba(232,120,98,0.18)" : LIGHT_PEACH,
+        icon: MessageSquare,
+        color: PLUM,
+      };
     return { bg: GOLD, icon: Bell, color: PLUM };
   };
 
@@ -7704,9 +7723,7 @@ function NotificationsPage({
         {tabUnreadCount > 0 && (
           <button
             onClick={() => {
-              if (activeTab === "updates") {
-                setRead(new Set(items.map((n) => n.id)));
-              }
+              setRead((prev) => new Set([...prev, ...activeItems.map((n) => n.id)]));
             }}
             className="text-xs font-bold"
             style={{ color: MUTED }}
@@ -7748,18 +7765,18 @@ function NotificationsPage({
           )}
         </button>
 
-        {/* Messages tab */}
+        {/* Reviews tab */}
         <button
-          onClick={() => setActiveTab("messages")}
+          onClick={() => setActiveTab("reviews")}
           className="relative px-1 pb-3"
         >
           <span
             className="text-sm font-black"
-            style={{ color: activeTab === "messages" ? PLUM : MUTED }}
+            style={{ color: activeTab === "reviews" ? PLUM : MUTED }}
           >
-            Messages
+            Reviews
           </span>
-          {activeTab === "messages" && (
+          {activeTab === "reviews" && (
             <span
               className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
               style={{ backgroundColor: PLUM }}
@@ -7770,31 +7787,32 @@ function NotificationsPage({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto" style={hideScroll}>
-        {activeTab === "updates" ? (
-          <div className="px-5 py-4 space-y-3">
-            {items.length === 0 && (
+        <div className="px-5 py-4 space-y-3">
+            {activeItems.length === 0 && (
               <div className="flex flex-col items-center justify-center py-24 px-8">
-                <Bell
+                {activeTab === "updates" ? <Bell
                   size={48}
                   className="mb-4"
                   color={MUTED}
                   strokeWidth={1.8}
-                />
+                /> : <MessageSquare size={48} className="mb-4" color={MUTED} strokeWidth={1.8} />}
                 <p
                   className="text-base font-black mb-1.5 text-center"
                   style={{ color: PLUM }}
                 >
-                  No notifications yet
+                  {activeTab === "updates" ? "No notifications yet" : "No review activity yet"}
                 </p>
                 <p
                   className="text-sm text-center leading-relaxed"
                   style={{ color: MUTED }}
                 >
-                  Updates on CCA events and deadlines will appear here.
+                  {activeTab === "updates"
+                    ? "Updates on CCA events and deadlines will appear here."
+                    : "Replies and likes for your reviews will appear here."}
                 </p>
               </div>
             )}
-            {items.map((n) => {
+            {activeItems.map((n) => {
               const isRead = read.has(n.id);
               const typeInfo = iconForType(n.type);
               const TypeIcon = typeInfo.icon;
@@ -7854,28 +7872,6 @@ function NotificationsPage({
               );
             })}
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-24 px-8">
-            <MessageSquare
-              size={48}
-              className="mb-4"
-              color={MUTED}
-              strokeWidth={1.8}
-            />
-            <p
-              className="text-base font-black mb-1.5 text-center"
-              style={{ color: PLUM }}
-            >
-              No messages yet
-            </p>
-            <p
-              className="text-sm text-center leading-relaxed"
-              style={{ color: MUTED }}
-            >
-              When someone replies to your reviews, you will be notified here.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -8602,6 +8598,7 @@ function DetailEventsTab({
           );
         })}
       </div>
+
     </div>
   );
 }
@@ -8843,9 +8840,15 @@ function ReportPage({
 function ReviewThreadPage({
   review,
   onBack,
+  username,
+  userReplies,
+  setUserReplies,
 }: {
-  review: (typeof REVIEW_DATA)[0];
+  review: UserReview;
   onBack: () => void;
+  username?: string;
+  userReplies: UserReply[];
+  setUserReplies: React.Dispatch<React.SetStateAction<UserReply[]>>;
 }) {
   const [vis, setVis] = React.useState(false);
   React.useEffect(() => {
@@ -8858,11 +8861,21 @@ function ReviewThreadPage({
   const [replyPosition, setReplyPosition] = React.useState("");
   const [replyTarget, setReplyTarget] = React.useState<string>(review.user);
   const [reportId, setReportId] = React.useState<number | null>(null);
+  const [editingReplyId, setEditingReplyId] = React.useState<number | null>(
+    null,
+  );
+  const [editReplyText, setEditReplyText] = React.useState("");
+  const [deleteReplyId, setDeleteReplyId] = React.useState<number | null>(
+    null,
+  );
   const [threadVotes, setThreadVotes] = React.useState<
     Record<string, 1 | -1 | 0>
   >({});
   const inputRef = React.useRef<HTMLInputElement>(null);
-  const replies = REVIEW_THREADS[review.id] ?? [];
+  const replies: UserReply[] = [
+    ...userReplies,
+    ...(REVIEW_THREADS[review.id] ?? []),
+  ];
 
   const goBack = () => {
     setVis(false);
@@ -8884,9 +8897,43 @@ function ReviewThreadPage({
 
   const handleSend = () => {
     if (!replyText.trim()) return;
+    setUserReplies((prev) => [
+      {
+        id: Date.now(),
+        user: username ?? "you",
+        year: replyPosition.trim() || "AY25/26 Member",
+        isExco: false,
+        upvotes: 0,
+        text: replyText.trim(),
+        isOwner: true,
+      },
+      ...prev,
+    ]);
     setReplyText("");
     setReplyTarget(review.user);
     inputRef.current?.blur();
+  };
+
+  const handleSaveReply = () => {
+    if (!editReplyText.trim() || editingReplyId === null) return;
+    setUserReplies((prev) =>
+      prev.map((reply) =>
+        reply.id === editingReplyId
+          ? { ...reply, text: editReplyText.trim() }
+          : reply,
+      ),
+    );
+    setEditingReplyId(null);
+    setEditReplyText("");
+  };
+
+  const handleDeleteReply = (id: number) => {
+    setUserReplies((prev) => prev.filter((reply) => reply.id !== id));
+    if (editingReplyId === id) {
+      setEditingReplyId(null);
+      setEditReplyText("");
+    }
+    setDeleteReplyId(null);
   };
 
   if (reportId !== null) {
@@ -8908,6 +8955,7 @@ function ReviewThreadPage({
     upvotes,
     text,
     onReport,
+    isOwner = false,
     small = false,
   }: {
     itemId: string;
@@ -8917,6 +8965,7 @@ function ReviewThreadPage({
     upvotes: number;
     text: string;
     onReport: () => void;
+    isOwner?: boolean;
     small?: boolean;
   }) => {
     const myVote = threadVotes[itemId] ?? 0;
@@ -8960,16 +9009,35 @@ function ReviewThreadPage({
               {year}
             </p>
           </div>
-          <button onClick={onReport} className="flex-shrink-0 opacity-50">
-            <Flag size={12} color={MUTED} />
-          </button>
+          {!isOwner && (
+            <button onClick={onReport} className="flex-shrink-0 opacity-50">
+              <Flag size={12} color={MUTED} />
+            </button>
+          )}
         </div>
-        <p
-          className={`${small ? "text-[12px]" : "text-[13px]"} leading-relaxed px-3.5 pb-2.5`}
-          style={{ color: MUTED }}
-        >
-          {text}
-        </p>
+        {isOwner && editingReplyId === Number(itemId) ? (
+          <div className="px-3.5 pb-2.5">
+            <textarea
+              value={editReplyText}
+              onChange={(e) => setEditReplyText(e.target.value)}
+              className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none resize-none"
+              rows={3}
+              style={{
+                backgroundColor: WHITE,
+                border: `1.5px solid ${CORAL}`,
+                color: PLUM,
+                fontFamily: "'Nunito Sans',sans-serif",
+              }}
+            />
+          </div>
+        ) : (
+          <p
+            className={`${small ? "text-[12px]" : "text-[13px]"} leading-relaxed px-3.5 pb-2.5`}
+            style={{ color: MUTED }}
+          >
+            {text}
+          </p>
+        )}
         <div
           className="flex items-center gap-2.5 px-3.5 pb-3 pt-1.5"
           style={{ borderTop: `1px solid ${BORDER}` }}
@@ -9017,6 +9085,53 @@ function ReviewThreadPage({
               fill={myVote === -1 ? "#B91C1C" : "none"}
             />
           </button>
+          {isOwner && (
+            <div className="ml-auto flex items-center gap-2">
+              {editingReplyId === Number(itemId) ? (
+                <>
+                  <button
+                    onClick={() => {
+                      setEditingReplyId(null);
+                      setEditReplyText("");
+                    }}
+                    className="text-[11px] font-bold active:opacity-60"
+                    style={{ color: MUTED }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveReply}
+                    disabled={!editReplyText.trim()}
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-black"
+                    style={{
+                      backgroundColor: editReplyText.trim() ? CORAL : BORDER,
+                      color: editReplyText.trim() ? PLUM : MUTED,
+                    }}
+                  >
+                    Save
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    setEditingReplyId(Number(itemId));
+                    setEditReplyText(text);
+                  }}
+                  className="flex h-5 items-center gap-1 text-[11px] font-bold leading-none"
+                  style={{ color: MUTED }}
+                >
+                  <Pencil size={12} />
+                  <span>Edit</span>
+                </button>
+              )}
+              <button
+                onClick={() => setDeleteReplyId(Number(itemId))}
+                aria-label="Delete reply"
+              >
+                <Trash2 size={13} color="#B91C1C" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -9088,6 +9203,7 @@ function ReviewThreadPage({
                   upvotes={r.upvotes}
                   text={r.text}
                   onReport={() => setReportId(r.id)}
+                  isOwner={r.isOwner}
                   small
                 />
               ))}
@@ -9120,19 +9236,6 @@ function ReviewThreadPage({
             </button>
           </div>
         )}
-        {/* Position field */}
-        <div
-          className="rounded-xl px-3 py-2 mb-2"
-          style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}` }}
-        >
-          <input
-            value={replyPosition}
-            onChange={(e) => setReplyPosition(e.target.value)}
-            placeholder="Your position, e.g. AY24/25 Member"
-            className="w-full bg-transparent text-xs outline-none"
-            style={{ color: MUTED, fontFamily: "'Nunito Sans',sans-serif" }}
-          />
-        </div>
         {/* Reply input */}
         <div
           className="flex items-center gap-3 rounded-2xl px-4 py-3"
@@ -9164,36 +9267,99 @@ function ReviewThreadPage({
             <ArrowRight size={14} color={replyText.trim() ? PLUM : MUTED} />
           </button>
         </div>
+        <div
+          className="rounded-xl px-3 py-2 mt-2"
+          style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}` }}
+        >
+          <input
+            value={replyPosition}
+            onChange={(e) => setReplyPosition(e.target.value)}
+            placeholder="Your position (optional), e.g. AY24/25 Member"
+            className="w-full bg-transparent text-xs outline-none"
+            style={{ color: PLUM, fontFamily: "'Nunito Sans',sans-serif" }}
+          />
+        </div>
       </div>
+
+      {deleteReplyId !== null && (
+        <div
+          className="absolute inset-0 z-[60] flex items-center justify-center px-6"
+          style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
+          onClick={() => setDeleteReplyId(null)}
+        >
+          <div
+            className="w-full max-w-[340px] rounded-3xl p-6"
+            style={{ backgroundColor: WHITE }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-black mb-2" style={{ color: PLUM }}>
+              Delete reply?
+            </h2>
+            <p className="text-sm leading-relaxed mb-6" style={{ color: MUTED }}>
+              Are you sure you want to delete your reply? This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteReplyId(null)}
+                className="flex-1 py-3 rounded-2xl text-sm font-black"
+                style={{
+                  backgroundColor: CREAM,
+                  border: `1.5px solid ${BORDER}`,
+                  color: PLUM,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteReply(deleteReplyId)}
+                className="flex-1 py-3 rounded-2xl text-sm font-black"
+                style={{ backgroundColor: DANGER_BG, color: "#B91C1C" }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function DetailReviewsTab({
-  cca,
   onOpenThread,
   username,
   isMember,
+  userReviews,
+  setUserReviews,
+  onFirstReview,
+  userRepliesByReview,
 }: {
-  cca: CCA;
-  onOpenThread: (r: (typeof REVIEW_DATA)[0]) => void;
+  onOpenThread: (r: UserReview) => void;
   username?: string;
   isMember?: boolean;
+  userReviews: UserReview[];
+  setUserReviews: React.Dispatch<React.SetStateAction<UserReview[]>>;
+  onFirstReview: () => void;
+  userRepliesByReview: Record<number, UserReply[]>;
 }) {
   const [reportId, setReportId] = React.useState<number | null>(null);
   const [newReview, setNewReview] = React.useState("");
+  const [editingReviewId, setEditingReviewId] = React.useState<number | null>(
+    null,
+  );
+  const [editReviewText, setEditReviewText] = React.useState("");
+  const [deleteReviewId, setDeleteReviewId] = React.useState<number | null>(
+    null,
+  );
   const [position, setPosition] = React.useState(
     isMember ? "AY25/26 Member" : "",
   );
   const [anonymous, setAnonymous] = React.useState(false);
-  const [localReviews, setLocalReviews] = React.useState<typeof REVIEW_DATA>(
-    [],
-  );
   const [reviewVotes, setReviewVotes] = React.useState<
     Record<number, 1 | -1 | 0>
   >({});
 
-  const allReviews = [...localReviews, ...REVIEW_DATA];
+  const allReviews = [...userReviews, ...REVIEW_DATA];
 
   const handleVote = (id: number, dir: 1 | -1) => {
     setReviewVotes((prev) => {
@@ -9212,9 +9378,38 @@ function DetailReviewsTab({
       upvotes: 0,
       replies: 0,
       text: newReview.trim(),
+      isOwner: true,
     };
-    setLocalReviews((prev) => [review, ...prev]);
+    setUserReviews((prev) => [review, ...prev]);
+    onFirstReview();
     setNewReview("");
+  };
+
+  const handleEdit = (review: UserReview) => {
+    setEditingReviewId(review.id);
+    setEditReviewText(review.text);
+  };
+
+  const handleDelete = (id: number) => {
+    setUserReviews((prev) => prev.filter((review) => review.id !== id));
+    if (editingReviewId === id) {
+      setEditingReviewId(null);
+      setEditReviewText("");
+    }
+    setDeleteReviewId(null);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editReviewText.trim() || editingReviewId === null) return;
+    setUserReviews((prev) =>
+      prev.map((review) =>
+        review.id === editingReviewId
+          ? { ...review, text: editReviewText.trim() }
+          : review,
+      ),
+    );
+    setEditingReviewId(null);
+    setEditReviewText("");
   };
 
   const tabScrollRef = React.useRef<HTMLDivElement>(null);
@@ -9315,7 +9510,9 @@ function DetailReviewsTab({
       {/* Reviews */}
       <div className="space-y-3">
         {allReviews.map((r) => {
-          const threadCount = (REVIEW_THREADS[r.id] ?? []).length;
+          const threadCount =
+            (REVIEW_THREADS[r.id] ?? []).length +
+            (userRepliesByReview[r.id] ?? []).length;
           const vote = reviewVotes[r.id] ?? 0;
           const displayUpvotes = r.upvotes + vote;
           return (
@@ -9353,19 +9550,40 @@ function DetailReviewsTab({
                     {r.year}
                   </p>
                 </div>
-                <button
-                  onClick={() => setReportId(r.id)}
-                  className="flex-shrink-0 opacity-60"
-                >
-                  <Flag size={13} color={MUTED} />
-                </button>
+                {!r.isOwner && (
+                  <button
+                    onClick={() => setReportId(r.id)}
+                    className="flex-shrink-0 opacity-60"
+                    aria-label="Report review"
+                  >
+                    <Flag size={13} color={MUTED} />
+                  </button>
+                )}
               </div>
-              <p
-                className="text-[13px] leading-relaxed px-3.5 pb-2.5"
-                style={{ color: MUTED }}
-              >
-                {r.text}
-              </p>
+              {editingReviewId === r.id ? (
+                <div className="px-3.5 pb-2.5">
+                  <textarea
+                    value={editReviewText}
+                    onChange={(e) => setEditReviewText(e.target.value)}
+                    className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none resize-none"
+                    rows={3}
+                    style={{
+                      backgroundColor: WHITE,
+                      border: `1.5px solid ${CORAL}`,
+                      color: PLUM,
+                      fontFamily: "'Nunito Sans',sans-serif",
+                    }}
+                    aria-label="Edit your review"
+                  />
+                </div>
+              ) : (
+                <p
+                  className="text-[13px] leading-relaxed px-3.5 pb-2.5"
+                  style={{ color: MUTED }}
+                >
+                  {r.text}
+                </p>
+              )}
               {/* Reactions */}
               <div
                 className="flex items-center gap-3 px-3.5 pb-3 pt-2"
@@ -9373,24 +9591,24 @@ function DetailReviewsTab({
               >
                 <button
                   onClick={() => onOpenThread(r)}
-                  className="flex items-center gap-1 active:opacity-70"
+                  className="flex h-5 items-center gap-1 leading-none active:opacity-70"
                 >
                   <MessageSquare
                     size={13}
                     color={threadCount > 0 ? CORAL : MUTED}
                   />
                   <span
-                    className="text-[11px] font-semibold"
+                    className="text-[12px] font-black leading-none"
                     style={{ color: threadCount > 0 ? CORAL : MUTED }}
                   >
                     {threadCount > 0 ? threadCount : r.replies}
                   </span>
                 </button>
-                <span className="text-[11px]" style={{ color: BORDER }}>
+                <span className="text-[11px] leading-none" style={{ color: BORDER }}>
                   |
                 </span>
                 <span
-                  className="text-[12px] font-black"
+                  className="text-[12px] font-black leading-none"
                   style={{
                     color:
                       displayUpvotes > 0
@@ -9423,11 +9641,97 @@ function DetailReviewsTab({
                     color={vote === -1 ? "#B91C1C" : MUTED}
                   />
                 </button>
+                {r.isOwner && (
+                  <div className="ml-auto flex items-center gap-2">
+                    {editingReviewId === r.id ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            setEditingReviewId(null);
+                            setEditReviewText("");
+                          }}
+                          className="text-[11px] font-bold active:opacity-60"
+                          style={{ color: MUTED }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSaveEdit}
+                          disabled={!editReviewText.trim()}
+                          className="px-2.5 py-1 rounded-lg text-[11px] font-black active:opacity-60"
+                          style={{
+                            backgroundColor: editReviewText.trim() ? CORAL : BORDER,
+                            color: editReviewText.trim() ? PLUM : MUTED,
+                          }}
+                        >
+                          Save
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => handleEdit(r)}
+                        className="flex h-5 items-center gap-1 text-[11px] font-bold leading-none active:opacity-60"
+                        style={{ color: MUTED }}
+                      >
+                        <Pencil size={12} />
+                        <span className="leading-none">Edit</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setDeleteReviewId(r.id)}
+                      className="active:opacity-60"
+                      aria-label="Delete review"
+                    >
+                      <Trash2 size={13} color="#B91C1C" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           );
         })}
       </div>
+
+      {deleteReviewId !== null && (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center px-6"
+          style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
+          onClick={() => setDeleteReviewId(null)}
+        >
+          <div
+            className="w-full max-w-[340px] rounded-3xl p-6"
+            style={{ backgroundColor: WHITE }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-black mb-2" style={{ color: PLUM }}>
+              Delete review?
+            </h2>
+            <p className="text-sm leading-relaxed mb-6" style={{ color: MUTED }}>
+              Are you sure you want to delete your review? This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteReviewId(null)}
+                className="flex-1 py-3 rounded-2xl text-sm font-black"
+                style={{
+                  backgroundColor: CREAM,
+                  border: `1.5px solid ${BORDER}`,
+                  color: PLUM,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deleteReviewId)}
+                className="flex-1 py-3 rounded-2xl text-sm font-black"
+                style={{ backgroundColor: DANGER_BG, color: "#B91C1C" }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -9450,6 +9754,11 @@ function CcaDetailPage({
   removedEvtKeys,
   setRemovedEvtKeys,
   onReminderChange,
+  userReviews,
+  setUserReviews,
+  onFirstReview,
+  userRepliesByReview,
+  setUserRepliesByReview,
 }: {
   cca: CCA;
   saved: boolean;
@@ -9463,6 +9772,13 @@ function CcaDetailPage({
   removedEvtKeys?: Set<string>;
   setRemovedEvtKeys?: React.Dispatch<React.SetStateAction<Set<string>>>;
   onReminderChange?: (turnedOn: boolean, undoFn: () => void) => void;
+  userReviews: UserReview[];
+  setUserReviews: React.Dispatch<React.SetStateAction<UserReview[]>>;
+  onFirstReview: (ccaName: string) => void;
+  userRepliesByReview: Record<number, UserReply[]>;
+  setUserRepliesByReview: React.Dispatch<
+    React.SetStateAction<Record<number, UserReply[]>>
+  >;
 }) {
   const [vis, setVis] = React.useState(false);
   React.useEffect(() => {
@@ -9471,9 +9787,9 @@ function CcaDetailPage({
   }, []);
 
   const [tab, setTab] = React.useState<DetailTab>("about");
-  const [threadReview, setThreadReview] = React.useState<
-    (typeof REVIEW_DATA)[0] | null
-  >(null);
+  const [threadReview, setThreadReview] = React.useState<UserReview | null>(
+    null,
+  );
   const [selectedDetailEvent, setSelectedDetailEvent] =
     React.useState<EventDetailData | null>(null);
 
@@ -9488,7 +9804,7 @@ function CcaDetailPage({
   const DETAIL_TABS: { id: DetailTab; label: string }[] = [
     { id: "about", label: "About" },
     { id: "events", label: "Events" },
-    { id: "reviews", label: `Reviews (${REVIEW_DATA.length})` },
+    { id: "reviews", label: `Reviews (${REVIEW_DATA.length + userReviews.length})` },
     { id: "home", label: "Contact" },
   ];
 
@@ -9593,10 +9909,13 @@ function CcaDetailPage({
         )}
         {tab === "reviews" && (
           <DetailReviewsTab
-            cca={cca}
             onOpenThread={setThreadReview}
             username={username}
             isMember={userMemberships?.includes(cca.id) ?? false}
+            userReviews={userReviews}
+            setUserReviews={setUserReviews}
+            onFirstReview={() => onFirstReview(cca.name)}
+            userRepliesByReview={userRepliesByReview}
           />
         )}
       </div>
@@ -9614,6 +9933,16 @@ function CcaDetailPage({
         <ReviewThreadPage
           review={threadReview}
           onBack={() => setThreadReview(null)}
+          username={username}
+          userReplies={userRepliesByReview[threadReview.id] ?? []}
+          setUserReplies={(update) =>
+            setUserRepliesByReview((prev) => {
+              const current = prev[threadReview.id] ?? [];
+              const next =
+                typeof update === "function" ? update(current) : update;
+              return { ...prev, [threadReview.id]: next };
+            })
+          }
         />
       )}
 
@@ -9671,6 +10000,13 @@ function MainApp({
   const [sheetCca, setSheetCca] = useState<CCA | null>(null);
   const [detailCca, setDetailCca] = useState<CCA | null>(null);
   const [detailCcaOrigin, setDetailCcaOrigin] = useState<Tab>("discover");
+  const [userReviewsByCca, setUserReviewsByCca] = useState<
+    Record<number, UserReview[]>
+  >({});
+  const [userRepliesByCca, setUserRepliesByCca] = useState<
+    Record<number, Record<number, UserReply[]>>
+  >({});
+  const hasPostedReviewRef = useRef(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showForYou, setShowForYou] = useState(false);
   const [notifiedDetailEvts, setNotifiedDetailEvts] = useState<Set<string>>(
@@ -9699,6 +10035,21 @@ function MainApp({
   // Notification read state
   const [notifRead, setNotifRead] = useState<Set<number>>(new Set());
   const hasUnread = notificationItems.some((n) => !notifRead.has(n.id));
+  const handleFirstReview = (ccaName: string) => {
+    if (hasPostedReviewRef.current) return;
+    hasPostedReviewRef.current = true;
+    setNotificationItems((prev) => [
+      {
+        id: Date.now(),
+        type: "review-post",
+        ccaName,
+        body: "You posted your first review. Replies and grouped likes will appear here.",
+        time: "just now",
+        read: false,
+      },
+      ...prev,
+    ]);
+  };
   // Discover category navigation
   const [discoverKey, setDiscoverKey] = useState(0);
   const [discoverInitialCategory, setDiscoverInitialCategory] = useState("");
@@ -10101,6 +10452,25 @@ function MainApp({
             removedEvtKeys={removedEvtKeys}
             setRemovedEvtKeys={setRemovedEvtKeys}
             onReminderChange={handleReminderChange}
+            userReviews={userReviewsByCca[detailCca.id] ?? []}
+            setUserReviews={(update) =>
+              setUserReviewsByCca((prev) => {
+                const current = prev[detailCca.id] ?? [];
+                const next =
+                  typeof update === "function" ? update(current) : update;
+                return { ...prev, [detailCca.id]: next };
+              })
+            }
+            onFirstReview={handleFirstReview}
+            userRepliesByReview={userRepliesByCca[detailCca.id] ?? {}}
+            setUserRepliesByReview={(update) =>
+              setUserRepliesByCca((prev) => {
+                const current = prev[detailCca.id] ?? {};
+                const next =
+                  typeof update === "function" ? update(current) : update;
+                return { ...prev, [detailCca.id]: next };
+              })
+            }
           />
         </div>
       )}
