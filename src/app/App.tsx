@@ -6297,9 +6297,24 @@ function EditProfilePage({
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+type NotificationSettings = {
+  deadlines: boolean;
+  newEvents: boolean;
+  wishlist: boolean;
+  reviewReply: boolean;
+};
+
 // PAGE: Notification Settings
 // ══════════════════════════════════════════════════════════════════════════════
-function NotificationSettingsPage({ onBack }: { onBack: () => void }) {
+function NotificationSettingsPage({
+  onBack,
+  initialSettings,
+  onSaveSettings,
+}: {
+  onBack: () => void;
+  initialSettings: NotificationSettings;
+  onSaveSettings: (settings: NotificationSettings) => void;
+}) {
   const [vis, setVis] = React.useState(false);
   React.useEffect(() => {
     const t = requestAnimationFrame(() => setVis(true));
@@ -6310,15 +6325,11 @@ function NotificationSettingsPage({ onBack }: { onBack: () => void }) {
     setTimeout(onBack, 280);
   };
 
-  const [settings, setSettings] = React.useState({
-    deadlines: false,
-    newEvents: false,
-    wishlist: false,
-    reviewReply: false,
-  });
+  const [settings, setSettings] = React.useState(initialSettings);
   const [savedBanner, setSavedBanner] = React.useState(false);
 
   const handleSave = () => {
+    onSaveSettings(settings);
     setSavedBanner(true);
     setTimeout(() => setSavedBanner(false), 2000);
   };
@@ -6659,6 +6670,8 @@ function ManageAccountPage({
   avatar,
   onUpdateProfile,
   userEmail,
+  notificationSettings,
+  onSaveNotificationSettings,
 }: {
   onBack: () => void;
   onSignOut: () => void;
@@ -6666,6 +6679,8 @@ function ManageAccountPage({
   avatar: string;
   userEmail?: string;
   onUpdateProfile: (username: string, avatar: string) => void;
+  notificationSettings: NotificationSettings;
+  onSaveNotificationSettings: (settings: NotificationSettings) => void;
 }) {
   const [vis, setVis] = React.useState(false);
   React.useEffect(() => {
@@ -6794,6 +6809,18 @@ function ManageAccountPage({
               onPress={() => setShowNotifSettings(true)}
               right={
                 <div className="flex items-center gap-1.5">
+                  <span
+                    className="text-xs font-bold"
+                    style={{
+                      color: Object.values(notificationSettings).some(Boolean)
+                        ? MINT
+                        : MUTED,
+                    }}
+                  >
+                    {Object.values(notificationSettings).some(Boolean)
+                      ? "On"
+                      : "Off"}
+                  </span>
                   <ChevronRight size={15} color={MUTED} />
                 </div>
               }
@@ -6845,7 +6872,11 @@ function ManageAccountPage({
         />
       )}
       {showNotifications && (
-        <NotificationSettingsPage onBack={() => setShowNotifSettings(false)} />
+        <NotificationSettingsPage
+          initialSettings={notificationSettings}
+          onSaveSettings={onSaveNotificationSettings}
+          onBack={() => setShowNotifSettings(false)}
+        />
       )}
       {showDeactivate && (
         <DeactivateAccountPage
@@ -7139,6 +7170,8 @@ function ProfileTab({
   userMemberships,
   onOpenCca,
   userEmail,
+  notificationSettings,
+  onSaveNotificationSettings,
 }: {
   onSignOut: () => void;
   username: string;
@@ -7152,6 +7185,8 @@ function ProfileTab({
   userMemberships?: number[];
   onOpenCca?: (cca: CCA) => void;
   userEmail?: string;
+  notificationSettings: NotificationSettings;
+  onSaveNotificationSettings: (settings: NotificationSettings) => void;
 }) {
   const [showManage, setShowManage] = React.useState(false);
   const [showRefine, setShowRefine] = React.useState(false);
@@ -7405,6 +7440,8 @@ function ProfileTab({
           avatar={avatar}
           onUpdateProfile={onUpdateProfile}
           userEmail={userEmail}
+          notificationSettings={notificationSettings}
+          onSaveNotificationSettings={onSaveNotificationSettings}
         />
       )}
 
@@ -9472,7 +9509,14 @@ function MainApp({
   );
   const [notifiedEvts, setNotifiedEvts] = useState<Set<number>>(new Set());
   const [removedEvtKeys, setRemovedEvtKeys] = useState<Set<string>>(new Set());
-  const [notifsEnabled, setNotifsEnabled] = useState(false);
+  const [notificationSettings, setNotificationSettings] =
+    useState<NotificationSettings>({
+      deadlines: false,
+      newEvents: false,
+      wishlist: false,
+      reviewReply: false,
+    });
+  const notifsEnabled = Object.values(notificationSettings).some(Boolean);
   type NotifItem = {
     id: number;
     type: string;
@@ -9588,7 +9632,7 @@ function MainApp({
         },
         ccaId: id,
       });
-      if (!notifPermAsked) {
+      if (!notifPermAsked && !notifsEnabled) {
         setNotifPermAsked(true);
         setTimeout(() => setShowNotifPerm(true), 400);
       }
@@ -9665,6 +9709,8 @@ function MainApp({
               setDetailCcaOrigin("profile");
             }}
             userEmail={userEmail}
+            notificationSettings={notificationSettings}
+            onSaveNotificationSettings={setNotificationSettings}
           />
         )}
       </div>
@@ -9802,7 +9848,12 @@ function MainApp({
               <button
                 onClick={() => {
                   setShowNotifPerm(false);
-                  setNotifsEnabled(true);
+                  setNotificationSettings({
+                    deadlines: true,
+                    newEvents: true,
+                    wishlist: true,
+                    reviewReply: true,
+                  });
                   setNotificationItems((prev) => [
                     {
                       id: Date.now(),
