@@ -1344,14 +1344,26 @@ const CCA_DETAIL_EVENTS: Record<
     { name: "Welcome Briefing", date: "5 Aug 2026", time: "5:30pm – 7:00pm" },
     { name: "Auditions", date: "23 Aug 2026", time: "2:00pm – 6:00pm" },
     { name: "Rehearsal Preview", date: "12 Sep 2026", time: "6:30pm – 9:00pm" },
-    { name: "Technical Rehearsal", date: "10 Oct 2026", time: "1:00pm – 5:00pm" },
+    {
+      name: "Technical Rehearsal",
+      date: "10 Oct 2026",
+      time: "1:00pm – 5:00pm",
+    },
     { name: "Annual Production", date: "24 Oct 2026", time: "7:00pm – 9:30pm" },
   ],
   11: [
     { name: "Orientation Tea", date: "12 Aug 2026", time: "12:00pm – 2:00pm" },
-    { name: "Welfare Pack Distribution", date: "2 Sep 2026", time: "11:00am – 4:00pm" },
+    {
+      name: "Welfare Pack Distribution",
+      date: "2 Sep 2026",
+      time: "11:00am – 4:00pm",
+    },
     { name: "Faculty Mixer", date: "15 Sep 2026", time: "5:00pm – 7:00pm" },
-    { name: "Arts Lecture Series", date: "8 Oct 2026", time: "6:30pm – 8:00pm" },
+    {
+      name: "Arts Lecture Series",
+      date: "8 Oct 2026",
+      time: "6:30pm – 8:00pm",
+    },
     { name: "FASS Night", date: "28 Oct 2026", time: "7:00pm – 10:00pm" },
   ],
   12: [
@@ -1372,56 +1384,116 @@ const CCA_DETAIL_EVENTS: Record<
     { name: "Trials", date: "11 Aug 2026", time: "6:00pm – 8:30pm" },
     { name: "Internal Debate", date: "25 Aug 2026", time: "6:30pm – 8:30pm" },
     { name: "Training Camp", date: "19 Sep 2026", time: "10:00am – 5:00pm" },
-    { name: "Inter-Faculty Debate", date: "3 Oct 2026", time: "1:00pm – 6:00pm" },
+    {
+      name: "Inter-Faculty Debate",
+      date: "3 Oct 2026",
+      time: "1:00pm – 6:00pm",
+    },
     { name: "Novice Tournament", date: "24 Oct 2026", time: "9:00am – 6:00pm" },
   ],
   15: [
     { name: "Bizad Welcome", date: "14 Aug 2026", time: "6:00pm – 8:00pm" },
     { name: "Networking Night", date: "28 Aug 2026", time: "7:00pm – 9:30pm" },
-    { name: "Case Competition Briefing", date: "16 Sep 2026", time: "6:30pm – 8:00pm" },
+    {
+      name: "Case Competition Briefing",
+      date: "16 Sep 2026",
+      time: "6:30pm – 8:00pm",
+    },
     { name: "Industry Night", date: "9 Oct 2026", time: "6:30pm – 9:00pm" },
     { name: "Career Workshop", date: "23 Oct 2026", time: "5:00pm – 7:00pm" },
   ],
   16: [
     { name: "Lab Tour", date: "13 Aug 2026", time: "3:00pm – 5:00pm" },
     { name: "MedTech Talk", date: "27 Aug 2026", time: "6:00pm – 7:30pm" },
-    { name: "Prototyping Workshop", date: "17 Sep 2026", time: "2:00pm – 5:00pm" },
+    {
+      name: "Prototyping Workshop",
+      date: "17 Sep 2026",
+      time: "2:00pm – 5:00pm",
+    },
     { name: "Hospital Visit", date: "8 Oct 2026", time: "9:00am – 12:00pm" },
     { name: "Project Showcase", date: "29 Oct 2026", time: "2:00pm – 5:00pm" },
   ],
   17: [
-    { name: "Site Visit Briefing", date: "15 Aug 2026", time: "4:00pm – 5:30pm" },
-    { name: "Construction Site Visit", date: "29 Aug 2026", time: "9:00am – 1:00pm" },
-    { name: "Bridge Design Workshop", date: "19 Sep 2026", time: "10:00am – 1:00pm" },
-    { name: "Concrete Casting Day", date: "10 Oct 2026", time: "9:00am – 1:00pm" },
-    { name: "Design Presentation", date: "30 Oct 2026", time: "2:00pm – 5:00pm" },
+    {
+      name: "Site Visit Briefing",
+      date: "15 Aug 2026",
+      time: "4:00pm – 5:30pm",
+    },
+    {
+      name: "Construction Site Visit",
+      date: "29 Aug 2026",
+      time: "9:00am – 1:00pm",
+    },
+    {
+      name: "Bridge Design Workshop",
+      date: "19 Sep 2026",
+      time: "10:00am – 1:00pm",
+    },
+    {
+      name: "Concrete Casting Day",
+      date: "10 Oct 2026",
+      time: "9:00am – 1:00pm",
+    },
+    {
+      name: "Design Presentation",
+      date: "30 Oct 2026",
+      time: "2:00pm – 5:00pm",
+    },
   ],
   18: [
     { name: "ECE Open House", date: "7 Aug 2026", time: "5:00pm – 7:00pm" },
-    { name: "PCB Soldering Workshop", date: "21 Aug 2026", time: "2:00pm – 5:00pm" },
+    {
+      name: "PCB Soldering Workshop",
+      date: "21 Aug 2026",
+      time: "2:00pm – 5:00pm",
+    },
     { name: "Tech Talk", date: "18 Sep 2026", time: "6:00pm – 8:00pm" },
     { name: "Hack Night", date: "2 Oct 2026", time: "7:00pm – 10:00pm" },
-    { name: "Project Exhibition", date: "23 Oct 2026", time: "5:00pm – 8:00pm" },
+    {
+      name: "Project Exhibition",
+      date: "23 Oct 2026",
+      time: "5:00pm – 8:00pm",
+    },
   ],
   19: [
     { name: "Green Campus Walk", date: "2 Aug 2026", time: "8:00am – 10:00am" },
     { name: "Beach Cleanup", date: "16 Aug 2026", time: "8:00am – 12:00pm" },
-    { name: "Sustainability Forum", date: "20 Sep 2026", time: "3:00pm – 5:00pm" },
+    {
+      name: "Sustainability Forum",
+      date: "20 Sep 2026",
+      time: "3:00pm – 5:00pm",
+    },
     { name: "Upcycling Workshop", date: "4 Oct 2026", time: "2:00pm – 5:00pm" },
     { name: "Green Week Fair", date: "18 Oct 2026", time: "11:00am – 4:00pm" },
   ],
   20: [
-    { name: "Robot Build Session", date: "8 Aug 2026", time: "2:00pm – 6:00pm" },
+    {
+      name: "Robot Build Session",
+      date: "8 Aug 2026",
+      time: "2:00pm – 6:00pm",
+    },
     { name: "ROS Workshop", date: "22 Aug 2026", time: "10:00am – 4:00pm" },
-    { name: "Internal Challenge", date: "12 Sep 2026", time: "1:00pm – 5:00pm" },
+    {
+      name: "Internal Challenge",
+      date: "12 Sep 2026",
+      time: "1:00pm – 5:00pm",
+    },
     { name: "Competition Prep", date: "10 Oct 2026", time: "6:00pm – 9:00pm" },
     { name: "Demo Day", date: "25 Oct 2026", time: "2:00pm – 6:00pm" },
   ],
   21: [
     { name: "Intro Talk", date: "4 Aug 2026", time: "5:30pm – 7:00pm" },
-    { name: "Campus Property Tour", date: "25 Aug 2026", time: "2:00pm – 4:30pm" },
+    {
+      name: "Campus Property Tour",
+      date: "25 Aug 2026",
+      time: "2:00pm – 4:30pm",
+    },
     { name: "Industry Visit", date: "22 Sep 2026", time: "9:00am – 12:00pm" },
-    { name: "Facilities Management Seminar", date: "6 Oct 2026", time: "6:30pm – 8:00pm" },
+    {
+      name: "Facilities Management Seminar",
+      date: "6 Oct 2026",
+      time: "6:30pm – 8:00pm",
+    },
     { name: "Networking Dinner", date: "27 Oct 2026", time: "7:00pm – 9:30pm" },
   ],
 };
@@ -5056,7 +5128,10 @@ function EventsTab({
   setNotifiedEvts,
   removedEvtKeys,
   setRemovedEvtKeys,
+  keptEvtKeys,
+  setKeptEvtKeys,
   onReminderChange,
+  onEventRemoved,
 }: {
   saved: Set<number>;
   notifiedDetailEvts?: Set<string>;
@@ -5066,7 +5141,10 @@ function EventsTab({
   setNotifiedEvts: React.Dispatch<React.SetStateAction<Set<number>>>;
   removedEvtKeys: Set<string>;
   setRemovedEvtKeys: React.Dispatch<React.SetStateAction<Set<string>>>;
+  keptEvtKeys: Set<string>;
+  setKeptEvtKeys: React.Dispatch<React.SetStateAction<Set<string>>>;
   onReminderChange?: (turnedOn: boolean, undoFn: () => void) => void;
+  onEventRemoved?: (undoFn: () => void) => void;
 }) {
   const { isDark } = useDark();
   const TODAY = new Date(2026, 7, 28);
@@ -5149,16 +5227,43 @@ function EventsTab({
     [saved],
   );
 
-  // Base: wishlisted events OR events with bell on — minus manually removed
+  // Base: wishlisted, belled, or kept (un-belled) events — minus manually removed
   const baseEvents = React.useMemo(
     () =>
       EVENTS.filter(
         (ev) =>
-          (saved.has(ev.ccaId) || notifiedEvts.has(ev.id)) &&
+          (saved.has(ev.ccaId) ||
+            notifiedEvts.has(ev.id) ||
+            keptEvtKeys.has(String(ev.id))) &&
           !removedEvtKeys.has(String(ev.id)),
       ),
-    [saved, notifiedEvts, removedEvtKeys],
+    [saved, notifiedEvts, keptEvtKeys, removedEvtKeys],
   );
+
+  // Non-wishlist CCAs that already have events on the user's Events list
+  const nonWishlistCcas = React.useMemo(() => {
+    const ids = new Set<number>();
+    baseEvents.forEach((ev) => {
+      if (!saved.has(ev.ccaId)) ids.add(ev.ccaId);
+    });
+    const addDetailCca = (ccaId: number, idx: number) => {
+      if (saved.has(ccaId)) return;
+      if (removedEvtKeys.has(String(-(ccaId * 100 + idx)))) return;
+      if (!CCA_DETAIL_EVENTS[ccaId]?.[idx]) return;
+      ids.add(ccaId);
+    };
+    if (notifiedDetailEvts) {
+      notifiedDetailEvts.forEach((key) => {
+        const [ccaIdStr, idxStr] = key.split("-");
+        addDetailCca(parseInt(ccaIdStr, 10), parseInt(idxStr, 10));
+      });
+    }
+    keptEvtKeys.forEach((k) => {
+      const id = Number(k);
+      if (id < 0) addDetailCca(Math.floor(-id / 100), -id % 100);
+    });
+    return CCAS.filter((c) => ids.has(c.id));
+  }, [baseEvents, saved, notifiedDetailEvts, keptEvtKeys, removedEvtKeys]);
 
   const visibleEvents = React.useMemo(() => {
     let evs = baseEvents;
@@ -5190,30 +5295,53 @@ function EventsTab({
 
   const allVisibleEvents = React.useMemo(() => {
     const evs = [...visibleEvents];
+    const seen = new Set(evs.map((e) => e.id));
+    const addDetail = (ccaId: number, idx: number) => {
+      const id = -(ccaId * 100 + idx);
+      const evKey = String(id);
+      if (removedEvtKeys.has(evKey) || seen.has(id)) return;
+      const cca = CCAS.find((c) => c.id === ccaId);
+      const ev = CCA_DETAIL_EVENTS[ccaId]?.[idx];
+      if (!ev || !cca) return;
+      seen.add(id);
+      evs.push({
+        id,
+        ccaId,
+        ccaName: cca.name,
+        title: ev.name,
+        date: ev.date.replace(/(\d+) (\w+) \d+/, "$2 $1"),
+        dayLabel: "",
+        time: ev.time,
+        location: "",
+      });
+    };
     if (notifiedDetailEvts) {
       [...notifiedDetailEvts].forEach((key) => {
         const [ccaIdStr, idxStr] = key.split("-");
         const ccaId = parseInt(ccaIdStr);
-        const idx = parseInt(idxStr);
-        const evKey = String(-(ccaId * 100 + idx));
-        if (removedEvtKeys.has(evKey)) return;
-        const cca = CCAS.find((c) => c.id === ccaId);
-        const ev = CCA_DETAIL_EVENTS[ccaId]?.[idx];
-        if (!ev || !cca) return;
-        evs.push({
-          id: -(ccaId * 100 + idx),
-          ccaId,
-          ccaName: cca.name,
-          title: ev.name,
-          date: ev.date.replace(/(\d+) (\w+) \d+/, "$2 $1"),
-          dayLabel: "",
-          time: ev.time,
-          location: "",
-        });
+        if (filterCcaIds.size > 0 && !filterCcaIds.has(ccaId)) return;
+        addDetail(ccaId, parseInt(idxStr));
+      });
+    }
+    if (!filterNotified) {
+      keptEvtKeys.forEach((k) => {
+        const id = Number(k);
+        if (id < 0) {
+          const ccaId = Math.floor(-id / 100);
+          if (filterCcaIds.size > 0 && !filterCcaIds.has(ccaId)) return;
+          addDetail(ccaId, -id % 100);
+        }
       });
     }
     return evs;
-  }, [visibleEvents, notifiedDetailEvts, removedEvtKeys]);
+  }, [
+    visibleEvents,
+    notifiedDetailEvts,
+    removedEvtKeys,
+    keptEvtKeys,
+    filterNotified,
+    filterCcaIds,
+  ]);
 
   // Sort all events by date ascending
   const sortedEvents = React.useMemo(
@@ -5435,9 +5563,9 @@ function EventsTab({
         : (notifiedDetailEvts?.has(
             `${Math.floor(-evId / 100)}-${-evId % 100}`,
           ) ?? false);
-    if (ev && turningOff) {
-      const staysOnPage = !filterNotified && ev.id > 0 && saved.has(ev.ccaId);
-      if (!staysOnPage) beginEventExit(ev);
+    if (turningOff) {
+      setKeptEvtKeys((prev) => new Set([...prev, String(evId)]));
+      if (ev && filterNotified) beginEventExit(ev);
     }
     if (evId > 0) {
       const wasOn = notifiedEvts.has(evId);
@@ -5479,25 +5607,51 @@ function EventsTab({
     const ev = sortedEvents.find((e) => e.id === evId);
     if (ev) beginEventExit(ev);
     const key = String(evId);
+    const wasKept = keptEvtKeys.has(key);
+    const detailKey =
+      evId > 0 ? null : `${Math.floor(-evId / 100)}-${-evId % 100}`;
+    const wasNotified =
+      evId > 0
+        ? notifiedEvts.has(evId)
+        : detailKey
+          ? (notifiedDetailEvts?.has(detailKey) ?? false)
+          : false;
     setRemovedEvtKeys((prev) => new Set([...prev, key]));
+    setKeptEvtKeys((prev) => {
+      const n = new Set(prev);
+      n.delete(key);
+      return n;
+    });
     if (evId > 0) {
       setNotifiedEvts((prev) => {
         const n = new Set(prev);
         n.delete(evId);
         return n;
       });
-    } else {
-      const ccaId = Math.floor(-evId / 100);
-      const idx = -evId % 100;
-      const detailKey = `${ccaId}-${idx}`;
-      if (setNotifiedDetailEvts) {
-        setNotifiedDetailEvts((prev) => {
-          const n = new Set(prev);
-          n.delete(detailKey);
-          return n;
-        });
-      }
+    } else if (detailKey && setNotifiedDetailEvts) {
+      setNotifiedDetailEvts((prev) => {
+        const n = new Set(prev);
+        n.delete(detailKey);
+        return n;
+      });
     }
+    onEventRemoved?.(() => {
+      setRemovedEvtKeys((prev) => {
+        const n = new Set(prev);
+        n.delete(key);
+        return n;
+      });
+      if (wasKept) {
+        setKeptEvtKeys((prev) => new Set([...prev, key]));
+      }
+      if (wasNotified) {
+        if (evId > 0) {
+          setNotifiedEvts((prev) => new Set([...prev, evId]));
+        } else if (detailKey) {
+          setNotifiedDetailEvts?.((prev) => new Set([...prev, detailKey]));
+        }
+      }
+    });
   };
 
   const isBellOn = (ev: (typeof EVENTS)[0]) => {
@@ -5520,9 +5674,7 @@ function EventsTab({
             if (swipedEvtKey !== evKey) setSwipedEvtKey(null);
           }}
           onRemove={() => setRemoveConfirm({ id: ev.id, title: ev.title })}
-          borderColor={
-            highlighted ? (isDark ? "#991B1B" : "#FECACA") : BORDER
-          }
+          borderColor={highlighted ? (isDark ? "#991B1B" : "#FECACA") : BORDER}
         >
           <div
             ref={(el) => {
@@ -5629,6 +5781,40 @@ function EventsTab({
       n.has(id) ? n.delete(id) : n.add(id);
       return n;
     });
+
+  const renderCcaFilterRow = (cca: CCA) => {
+    const on = filterCcaIds.has(cca.id);
+    return (
+      <button
+        key={cca.id}
+        onClick={() => toggleFilterCca(cca.id)}
+        className="w-full flex items-center gap-3 rounded-2xl px-4 py-3.5"
+        style={{
+          backgroundColor: WHITE,
+          border: `1.5px solid ${on ? CORAL : BORDER}`,
+        }}
+      >
+        <div
+          className="w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+          style={{
+            borderColor: on ? CORAL : BORDER,
+            backgroundColor: on ? CORAL : "transparent",
+          }}
+        >
+          {on && <Check size={11} color={FWHITE} strokeWidth={3} />}
+        </div>
+        <span
+          className="text-sm font-bold flex-1 text-left"
+          style={{ color: PLUM }}
+        >
+          {cca.name}
+        </span>
+        <span className="text-xs" style={{ color: MUTED }}>
+          {cca.category}
+        </span>
+      </button>
+    );
+  };
 
   const activeFilterCount = (filterNotified ? 1 : 0) + filterCcaIds.size;
 
@@ -6068,41 +6254,24 @@ function EventsTab({
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {wishlistCcas.map((cca) => {
-                    const on = filterCcaIds.has(cca.id);
-                    return (
-                      <button
-                        key={cca.id}
-                        onClick={() => toggleFilterCca(cca.id)}
-                        className="w-full flex items-center gap-3 rounded-2xl px-4 py-3.5"
-                        style={{
-                          backgroundColor: WHITE,
-                          border: `1.5px solid ${on ? CORAL : BORDER}`,
-                        }}
-                      >
-                        <div
-                          className="w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors"
-                          style={{
-                            borderColor: on ? CORAL : BORDER,
-                            backgroundColor: on ? CORAL : "transparent",
-                          }}
-                        >
-                          {on && (
-                            <Check size={11} color={FWHITE} strokeWidth={3} />
-                          )}
-                        </div>
-                        <span
-                          className="text-sm font-bold flex-1 text-left"
-                          style={{ color: PLUM }}
-                        >
-                          {cca.name}
-                        </span>
-                        <span className="text-xs" style={{ color: MUTED }}>
-                          {cca.category}
-                        </span>
-                      </button>
-                    );
-                  })}
+                  {wishlistCcas.map(renderCcaFilterRow)}
+                </div>
+              )}
+            </div>
+            <div>
+              <p
+                className="text-xs font-black uppercase tracking-wider mb-3"
+                style={{ color: MUTED }}
+              >
+                Non-wishlist CCAs
+              </p>
+              {nonWishlistCcas.length === 0 ? (
+                <p className="text-sm" style={{ color: MUTED }}>
+                  No non-wishlisted CCAs with events.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {nonWishlistCcas.map(renderCcaFilterRow)}
                 </div>
               )}
             </div>
@@ -9509,6 +9678,7 @@ function MainApp({
   );
   const [notifiedEvts, setNotifiedEvts] = useState<Set<number>>(new Set());
   const [removedEvtKeys, setRemovedEvtKeys] = useState<Set<string>>(new Set());
+  const [keptEvtKeys, setKeptEvtKeys] = useState<Set<string>>(new Set());
   const [notificationSettings, setNotificationSettings] =
     useState<NotificationSettings>({
       deadlines: false,
@@ -9559,10 +9729,16 @@ function MainApp({
     } else {
       showToast({
         msg: "Reminder removed",
-        desc: "This event is no longer in your Event reminders.",
-        undoFn,
+        desc: "You won't receive reminders for this event.",
       });
     }
+  };
+
+  const handleEventRemoved = (undoFn: () => void) => {
+    showToast({
+      msg: "This event removed from Events",
+      undoFn,
+    });
   };
 
   const handleFullRemove = (id: number) => {
@@ -9687,7 +9863,10 @@ function MainApp({
             setNotifiedEvts={setNotifiedEvts}
             removedEvtKeys={removedEvtKeys}
             setRemovedEvtKeys={setRemovedEvtKeys}
+            keptEvtKeys={keptEvtKeys}
+            setKeptEvtKeys={setKeptEvtKeys}
             onReminderChange={handleReminderChange}
+            onEventRemoved={handleEventRemoved}
           />
         )}
         {tab === "profile" && (
