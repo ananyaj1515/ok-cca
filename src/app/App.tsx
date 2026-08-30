@@ -26,6 +26,8 @@ import {
   Flag,
   Plus,
   ArrowRight,
+  ArrowUp,
+  ArrowDown,
   Reply,
   Info,
   HelpCircle,
@@ -36,6 +38,7 @@ import {
   Hand,
   SearchX,
   Funnel,
+  Cog,
 } from "lucide-react";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import noBgLogo from "@/imports/nobglogo.png";
@@ -1213,6 +1216,20 @@ const REVIEW_DATA = [
   },
 ];
 
+type UserReview = (typeof REVIEW_DATA)[number] & {
+  isOwner?: boolean;
+  isDeleted?: boolean;
+};
+type UserReply = {
+  id: number;
+  user: string;
+  year: string;
+  isExco: boolean;
+  upvotes: number;
+  text: string;
+  isOwner?: boolean;
+};
+
 const REVIEW_THREADS: Record<
   number,
   {
@@ -1280,10 +1297,15 @@ const REVIEW_THREADS: Record<
   ],
 };
 
-const CCA_DETAIL_EVENTS: Record<
-  number,
-  { name: string; date: string; time: string }[]
-> = {
+type CcaDetailEvent = {
+  name: string;
+  date: string;
+  time: string;
+  venue?: string;
+  description?: string;
+};
+
+const CCA_DETAIL_EVENTS: Record<number, CcaDetailEvent[]> = {
   1: [
     { name: "Member Auditions", date: "18 Aug 2026", time: "2:30pm – 8:30pm" },
     {
@@ -2782,6 +2804,12 @@ const SSO_MEMBERSHIPS = [
   { ccaId: 2, role: "AY24/25 Finance Head", isExco: true },
 ];
 
+const isExcoForCca = (ccaId: number, memberships?: number[]) =>
+  Boolean(
+    memberships?.includes(ccaId) &&
+      SSO_MEMBERSHIPS.some((m) => m.ccaId === ccaId && m.isExco),
+  );
+
 function OnboardNusScreen({
   onNext,
   onBack,
@@ -2876,7 +2904,7 @@ function OnboardNusScreen({
           className="w-full py-4 rounded-2xl font-black text-lg active:scale-[0.98] transition-transform"
           style={{ backgroundColor: CORAL, color: PLUM }}
         >
-          Looks right, continue
+          Continue
         </button>
       </div>
     </div>
@@ -5146,6 +5174,7 @@ function EventsTab({
   setKeptEvtKeys,
   onReminderChange,
   onEventRemoved,
+  detailEventsByCca,
 }: {
   saved: Set<number>;
   notifiedDetailEvts?: Set<string>;
@@ -5159,6 +5188,7 @@ function EventsTab({
   setKeptEvtKeys: React.Dispatch<React.SetStateAction<Set<string>>>;
   onReminderChange?: (turnedOn: boolean, undoFn: () => void) => void;
   onEventRemoved?: (undoFn: () => void) => void;
+  detailEventsByCca: Record<number, CcaDetailEvent[]>;
 }) {
   const { isDark } = useDark();
   const TODAY = new Date(2026, 7, 28);
@@ -5263,7 +5293,7 @@ function EventsTab({
     const addDetailCca = (ccaId: number, idx: number) => {
       if (saved.has(ccaId)) return;
       if (removedEvtKeys.has(String(-(ccaId * 100 + idx)))) return;
-      if (!CCA_DETAIL_EVENTS[ccaId]?.[idx]) return;
+      if (!detailEventsByCca[ccaId]?.[idx]) return;
       ids.add(ccaId);
     };
     if (notifiedDetailEvts) {
@@ -5315,7 +5345,7 @@ function EventsTab({
       const evKey = String(id);
       if (removedEvtKeys.has(evKey) || seen.has(id)) return;
       const cca = CCAS.find((c) => c.id === ccaId);
-      const ev = CCA_DETAIL_EVENTS[ccaId]?.[idx];
+      const ev = detailEventsByCca[ccaId]?.[idx];
       if (!ev || !cca) return;
       seen.add(id);
       evs.push({
@@ -5355,6 +5385,7 @@ function EventsTab({
     keptEvtKeys,
     filterNotified,
     filterCcaIds,
+    detailEventsByCca,
   ]);
 
   // Sort all events by date ascending
@@ -6517,6 +6548,19 @@ function NotificationSettingsPage({
     setTimeout(() => setSavedBanner(false), 2000);
   };
 
+  const handleTurnOffAll = () => {
+    const allOff: NotificationSettings = {
+      deadlines: false,
+      newEvents: false,
+      wishlist: false,
+      reviewReply: false,
+    };
+    setSettings(allOff);
+    onSaveSettings(allOff);
+    setSavedBanner(true);
+    setTimeout(() => setSavedBanner(false), 2000);
+  };
+
   const Toggle = ({ on, onToggle }: { on: boolean; onToggle: () => void }) => (
     <button
       onClick={(e) => {
@@ -6626,8 +6670,8 @@ function NotificationSettingsPage({
           style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}` }}
         >
           <Row
-            label="Review Replies"
-            desc="When someone replies to your CCA reviews"
+            label="Review Activity"
+            desc="Replies and likes for your CCA reviews"
             value={settings.reviewReply}
             field="reviewReply"
           />
@@ -6652,6 +6696,13 @@ function NotificationSettingsPage({
           style={{ backgroundColor: CORAL, color: PLUM }}
         >
           Save Changes
+        </button>
+        <button
+          onClick={handleTurnOffAll}
+          className="w-full mt-3 text-xs font-bold active:opacity-60"
+          style={{ color: "#B91C1C" }}
+        >
+          Turn off all notifications
         </button>
       </div>
     </div>
@@ -7377,9 +7428,19 @@ function ProfileTab({
 
   const memberships =
     userMemberships && userMemberships.length > 0
-      ? (userMemberships
-          .map((id) => CCAS.find((c) => c.id === id))
-          .filter(Boolean) as CCA[])
+      ? userMemberships
+          .map((id) => {
+            const cca = CCAS.find((c) => c.id === id);
+            const membership = SSO_MEMBERSHIPS.find((m) => m.ccaId === id);
+            return cca
+              ? {
+                  cca,
+                  role: membership?.role ?? "Member",
+                  isExco: membership?.isExco ?? false,
+                }
+              : null;
+          })
+          .filter(Boolean)
       : [];
 
   return (
@@ -7491,8 +7552,11 @@ function ProfileTab({
               </p>
             ) : (
               <div className="space-y-2">
-                {memberships.map((cca, i) => (
-                  <div key={cca.id} className="relative flex items-start gap-3">
+                {memberships.map((membership, i) => (
+                  <div
+                    key={membership.cca.id}
+                    className="relative flex items-start gap-3"
+                  >
                     {/* Timeline dot */}
                     <div
                       className="flex flex-col items-center pt-1 flex-shrink-0"
@@ -7517,16 +7581,16 @@ function ProfileTab({
                     )}
                     <button
                       className="flex-1 pb-2 text-left"
-                      onClick={() => onOpenCca?.(cca)}
+                      onClick={() => onOpenCca?.(membership.cca)}
                     >
                       <p
                         className="text-sm font-black leading-snug"
                         style={{ color: PLUM }}
                       >
-                        {cca.name}
+                        {membership.cca.name}
                       </p>
                       <p className="text-xs mt-0.5" style={{ color: MUTED }}>
-                        {cca.category}
+                        {membership.cca.category}
                       </p>
                       <span
                         className="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
@@ -7535,8 +7599,16 @@ function ProfileTab({
                           color: MINT,
                         }}
                       >
-                        AY25/26 Member
+                        {membership.role}
                       </span>
+                      {membership.isExco && (
+                        <span
+                          className="inline-block mt-1 ml-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: LIGHT_CORAL, color: CORAL }}
+                        >
+                          Exco
+                        </span>
+                      )}
                     </button>
                   </div>
                 ))}
@@ -7580,8 +7652,7 @@ function ProfileTab({
               className="text-sm leading-relaxed mb-6"
               style={{ color: MUTED }}
             >
-              You will be signed out of your account and returned to the welcome
-              screen.
+              Are you sure you want to sign out? You will need to log in again to access your account.
             </p>
             <div className="flex gap-3">
               <button
@@ -7649,11 +7720,13 @@ function ProfileTab({
 // ══════════════════════════════════════════════════════════════════════════════
 function NotificationsPage({
   onBack,
+  onOpenSettings,
   read,
   setRead,
   items = [],
 }: {
   onBack: () => void;
+  onOpenSettings: () => void;
   read: Set<number>;
   setRead: React.Dispatch<React.SetStateAction<Set<number>>>;
   items?: {
@@ -7670,7 +7743,7 @@ function NotificationsPage({
     const t = requestAnimationFrame(() => setVis(true));
     return () => cancelAnimationFrame(t);
   }, []);
-  const [activeTab, setActiveTab] = React.useState<"updates" | "messages">(
+  const [activeTab, setActiveTab] = React.useState<"updates" | "reviews">(
     "updates",
   );
 
@@ -7680,9 +7753,17 @@ function NotificationsPage({
   };
 
   const { isDark } = useDark();
-  const tabUnreadCount =
-    activeTab === "updates" ? items.filter((n) => !read.has(n.id)).length : 0;
-  const unreadCount = items.filter((n) => !read.has(n.id)).length;
+  const reviewItems = items.filter((n) => n.type.startsWith("review"));
+  const updateItems = items.filter((n) => !n.type.startsWith("review"));
+  const activeItems = activeTab === "updates" ? updateItems : reviewItems;
+  const tabUnreadCount = activeItems.filter((n) => !read.has(n.id)).length;
+  const unreadCount = updateItems.filter((n) => !read.has(n.id)).length;
+  const reviewUnreadCount = reviewItems.filter((n) => !read.has(n.id)).length;
+
+  React.useEffect(() => {
+    if (unreadCount > 0) setActiveTab("updates");
+    else if (reviewUnreadCount > 0) setActiveTab("reviews");
+  }, [unreadCount, reviewUnreadCount]);
 
   const iconForType = (type: string) => {
     if (type === "deadline")
@@ -7698,6 +7779,12 @@ function NotificationsPage({
         color: "#3B82F6",
       };
     if (type === "wishlist") return { bg: PEACH, icon: Heart, color: PLUM };
+    if (type.startsWith("review"))
+      return {
+        bg: isDark ? "rgba(232,120,98,0.18)" : LIGHT_PEACH,
+        icon: MessageSquare,
+        color: PLUM,
+      };
     return { bg: GOLD, icon: Bell, color: PLUM };
   };
 
@@ -7715,12 +7802,18 @@ function NotificationsPage({
         <h1 className="flex-1 text-lg font-black" style={{ color: PLUM }}>
           Notifications
         </h1>
+        <button
+          onClick={onOpenSettings}
+          className="w-8 h-8 rounded-xl flex items-center justify-center active:opacity-60"
+          style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
+          aria-label="Notification settings"
+        >
+          <Cog size={15} color={PLUM} />
+        </button>
         {tabUnreadCount > 0 && (
           <button
             onClick={() => {
-              if (activeTab === "updates") {
-                setRead(new Set(items.map((n) => n.id)));
-              }
+              setRead((prev) => new Set([...prev, ...activeItems.map((n) => n.id)]));
             }}
             className="text-xs font-bold"
             style={{ color: MUTED }}
@@ -7762,18 +7855,26 @@ function NotificationsPage({
           )}
         </button>
 
-        {/* Messages tab */}
+        {/* Reviews tab */}
         <button
-          onClick={() => setActiveTab("messages")}
-          className="relative px-1 pb-3"
+          onClick={() => setActiveTab("reviews")}
+          className="relative flex items-center gap-1.5 px-1 pb-3"
         >
           <span
             className="text-sm font-black"
-            style={{ color: activeTab === "messages" ? PLUM : MUTED }}
+            style={{ color: activeTab === "reviews" ? PLUM : MUTED }}
           >
-            Messages
+            Reviews
           </span>
-          {activeTab === "messages" && (
+          {reviewUnreadCount > 0 && (
+            <span
+              className="text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: CORAL, color: WHITE }}
+            >
+              {reviewUnreadCount}
+            </span>
+          )}
+          {activeTab === "reviews" && (
             <span
               className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
               style={{ backgroundColor: PLUM }}
@@ -7784,31 +7885,32 @@ function NotificationsPage({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto" style={hideScroll}>
-        {activeTab === "updates" ? (
-          <div className="px-5 py-4 space-y-3">
-            {items.length === 0 && (
+        <div className="px-5 py-4 space-y-3">
+            {activeItems.length === 0 && (
               <div className="flex flex-col items-center justify-center py-24 px-8">
-                <Bell
+                {activeTab === "updates" ? <Bell
                   size={48}
                   className="mb-4"
                   color={MUTED}
                   strokeWidth={1.8}
-                />
+                /> : <MessageSquare size={48} className="mb-4" color={MUTED} strokeWidth={1.8} />}
                 <p
                   className="text-base font-black mb-1.5 text-center"
                   style={{ color: PLUM }}
                 >
-                  No notifications yet
+                  {activeTab === "updates" ? "No notifications yet" : "No review activity yet"}
                 </p>
                 <p
                   className="text-sm text-center leading-relaxed"
                   style={{ color: MUTED }}
                 >
-                  Updates on CCA events and deadlines will appear here.
+                  {activeTab === "updates"
+                    ? "Updates on CCA events and deadlines will appear here."
+                    : "Replies and likes for your reviews will appear here."}
                 </p>
               </div>
             )}
-            {items.map((n) => {
+            {activeItems.map((n) => {
               const isRead = read.has(n.id);
               const typeInfo = iconForType(n.type);
               const TypeIcon = typeInfo.icon;
@@ -7868,28 +7970,6 @@ function NotificationsPage({
               );
             })}
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-24 px-8">
-            <MessageSquare
-              size={48}
-              className="mb-4"
-              color={MUTED}
-              strokeWidth={1.8}
-            />
-            <p
-              className="text-base font-black mb-1.5 text-center"
-              style={{ color: PLUM }}
-            >
-              No messages yet
-            </p>
-            <p
-              className="text-sm text-center leading-relaxed"
-              style={{ color: MUTED }}
-            >
-              When someone replies to your reviews, you will be notified here.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -8072,23 +8152,55 @@ function CcaBottomSheet({
 // ══════════════════════════════════════════════════════════════════════════════
 // CCA DETAIL PAGE — sub-tab components
 // ══════════════════════════════════════════════════════════════════════════════
-function DetailHomeTab({ cca }: { cca: CCA }) {
+function DetailHomeTab({
+  cca,
+  userMemberships,
+}: {
+  cca: CCA;
+  userMemberships?: number[];
+}) {
   const exco = CCA_EXCO[cca.id] ?? [];
   const handle = cca.name.toLowerCase().replace(/ /g, "");
+  const isExcoMember = isExcoForCca(cca.id, userMemberships);
+  const [editLinks, setEditLinks] = React.useState(false);
+  const [links, setLinks] = React.useState([
+    { label: "IG", value: `@${handle}` },
+    { label: "Linktree", value: `linktr.ee/${handle}` },
+  ]);
   return (
     <div className="px-5 py-4 space-y-5 pb-10">
       <section>
-        <p className="text-sm font-black mb-2" style={{ color: PLUM }}>
-          Links
-        </p>
-        <div className="space-y-1.5">
-          <p className="text-sm font-semibold" style={{ color: CORAL }}>
-            IG: @{handle}
+        <div className="flex items-center gap-2 mb-2">
+          <p className="text-sm font-black" style={{ color: PLUM }}>
+            Links
           </p>
-          <p className="text-sm font-semibold" style={{ color: CORAL }}>
-            Linktree: linktr.ee/{handle}
-          </p>
+          {isExcoMember && !editLinks && (
+            <button onClick={() => setEditLinks(true)} className="opacity-60">
+              <Pencil size={13} color={PLUM} />
+            </button>
+          )}
         </div>
+        {editLinks ? (
+          <div className="space-y-2">
+            {links.map((link, index) => (
+              <div key={index} className="flex gap-2">
+                <input value={link.label} onChange={(e) => setLinks((items) => items.map((item, i) => i === index ? { ...item, label: e.target.value } : item))} className="w-24 rounded-xl px-3 py-2 text-sm outline-none" style={{ backgroundColor: WHITE, border: `1.5px solid ${CORAL}`, color: PLUM }} />
+                <input value={link.value} onChange={(e) => setLinks((items) => items.map((item, i) => i === index ? { ...item, value: e.target.value } : item))} className="min-w-0 flex-1 rounded-xl px-3 py-2 text-sm outline-none" style={{ backgroundColor: WHITE, border: `1.5px solid ${CORAL}`, color: PLUM }} />
+                <button onClick={() => setLinks((items) => items.filter((_, i) => i !== index))} className="w-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: DANGER_BG }} aria-label="Remove link"><Trash2 size={14} color="#B91C1C" /></button>
+              </div>
+            ))}
+            <button onClick={() => setLinks((items) => [...items, { label: "Link", value: "" }])} className="w-full py-2 rounded-xl text-xs font-black" style={{ backgroundColor: WHITE, border: `1.5px dashed ${MUTED}`, color: MUTED }}>+ Add link</button>
+            <button onClick={() => setEditLinks(false)} className="w-full py-2 rounded-xl text-xs font-black" style={{ backgroundColor: CORAL, color: PLUM }}>Save</button>
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            {links.map((link, index) => (
+              <p key={index} className="text-sm font-semibold" style={{ color: CORAL }}>
+                {link.label}: {link.value}
+              </p>
+            ))}
+          </div>
+        )}
       </section>
       <section>
         <p className="text-sm font-black mb-3" style={{ color: PLUM }}>
@@ -8135,7 +8247,48 @@ function DetailHomeTab({ cca }: { cca: CCA }) {
   );
 }
 
-function DetailAboutTab({ cca, username }: { cca: CCA; username?: string }) {
+const FINANCIAL_COSTS: Record<number, { label: string; amount: string }[]> = {
+  1: [
+    { label: "Annual membership fee", amount: "S$80" },
+    { label: "Costume & attire", amount: "S$50–120" },
+  ],
+  2: [
+    { label: "Annual membership fee", amount: "S$40" },
+    { label: "Component materials", amount: "S$20–60" },
+  ],
+  3: [
+    { label: "Annual membership fee", amount: "S$30" },
+    { label: "Film & printing", amount: "S$10–40" },
+  ],
+  4: [
+    { label: "Annual membership fee", amount: "S$40" },
+    { label: "Sports equipment", amount: "S$20–50" },
+  ],
+  5: [
+    { label: "Annual membership fee", amount: "S$60" },
+    { label: "Concert attire", amount: "S$40–80" },
+  ],
+  6: [
+    { label: "Annual membership fee", amount: "Free" },
+    { label: "Event transport", amount: "S$5–15" },
+  ],
+  7: [
+    { label: "Annual membership fee", amount: "Free" },
+    { label: "Hackathon food & misc", amount: "S$10–30" },
+  ],
+  8: [
+    { label: "Annual membership fee", amount: "S$40" },
+    { label: "Shuttlecocks & kit", amount: "S$20–40" },
+  ],
+};
+
+function DetailAboutTab({
+  cca,
+  userMemberships,
+}: {
+  cca: CCA;
+  userMemberships?: number[];
+}) {
   const commitDesc: Record<string, string> = {
     Explore:
       "Low to moderate time commitment. Great for exploring new interests casually.",
@@ -8145,13 +8298,7 @@ function DetailAboutTab({ cca, username }: { cca: CCA; username?: string }) {
       "High commitment with competitions, performances, and leadership responsibilities.",
   };
 
-  const isExcoMember = React.useMemo(
-    () =>
-      username
-        ? (CCA_EXCO[cca.id] ?? []).some((e) => e.name === username)
-        : false,
-    [cca.id, username],
-  );
+  const isExcoMember = isExcoForCca(cca.id, userMemberships);
 
   const [editAbout, setEditAbout] = React.useState(false);
   const [aboutText, setAboutText] = React.useState(
@@ -8159,6 +8306,40 @@ function DetailAboutTab({ cca, username }: { cca: CCA; username?: string }) {
   );
   const [editCommit, setEditCommit] = React.useState(false);
   const [commitLevel, setCommitLevel] = React.useState(cca.commitment);
+  const [commitText, setCommitText] = React.useState(commitDesc[cca.commitment]);
+  const [commitDraft, setCommitDraft] = React.useState(commitDesc[cca.commitment]);
+  const [commitLevelBeforeEdit, setCommitLevelBeforeEdit] = React.useState(cca.commitment);
+  const [editCosts, setEditCosts] = React.useState(false);
+  const [costRows, setCostRows] = React.useState(
+    () =>
+      FINANCIAL_COSTS[cca.id]?.map((row) => ({ ...row })) ?? [
+        { label: "Annual membership fee", amount: "Contact CCA for details" },
+      ],
+  );
+  const [customSections, setCustomSections] = React.useState<
+    { id: number; title: string; body: string }[]
+  >([]);
+  const [sectionToDelete, setSectionToDelete] = React.useState<{
+    id: number;
+    title: string;
+  } | null>(null);
+  const [editingSectionId, setEditingSectionId] = React.useState<number | null>(
+    null,
+  );
+  const [newSectionId, setNewSectionId] = React.useState<number | null>(null);
+  const [sectionDraft, setSectionDraft] = React.useState({
+    id: 0,
+    title: "",
+    body: "",
+  });
+  const [lastUpdated, setLastUpdated] = React.useState("Aug 2026");
+  const markUpdated = () =>
+    setLastUpdated(
+      new Intl.DateTimeFormat("en-SG", {
+        month: "short",
+        year: "numeric",
+      }).format(new Date()),
+    );
 
   return (
     <div className="px-5 py-4 space-y-5 pb-10">
@@ -8192,7 +8373,10 @@ function DetailAboutTab({ cca, username }: { cca: CCA; username?: string }) {
             />
             <div className="flex gap-2">
               <button
-                onClick={() => setEditAbout(false)}
+                onClick={() => {
+                  setEditAbout(false);
+                  markUpdated();
+                }}
                 className="flex-1 py-2 rounded-xl text-xs font-black"
                 style={{
                   backgroundColor: CREAM,
@@ -8224,7 +8408,11 @@ function DetailAboutTab({ cca, username }: { cca: CCA; username?: string }) {
           </p>
           {isExcoMember && !editCommit && (
             <button
-              onClick={() => setEditCommit(true)}
+              onClick={() => {
+                setCommitLevelBeforeEdit(commitLevel);
+                setCommitDraft(commitText);
+                setEditCommit(true);
+              }}
               className="opacity-60 active:opacity-100"
             >
               <Pencil size={13} color={PLUM} />
@@ -8232,43 +8420,81 @@ function DetailAboutTab({ cca, username }: { cca: CCA; username?: string }) {
           )}
         </div>
         {editCommit ? (
-          <div className="space-y-2 mb-2">
+          <div className="mb-2">
+            <div className="flex items-center gap-2 mb-3">
             {(["Explore", "Commit", "Immerse"] as const).map((lvl) => (
               <button
                 key={lvl}
-                onClick={() => {
-                  setCommitLevel(lvl);
-                  setEditCommit(false);
-                }}
-                className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left"
+                onClick={() => setCommitLevel(lvl)}
+                className="flex-1 min-w-0 flex flex-col items-center gap-1.5 rounded-xl px-2 py-2"
                 style={{
                   backgroundColor: commitLevel === lvl ? PLUM_SOFT : WHITE,
                   border: `1.5px solid ${commitLevel === lvl ? PLUM : BORDER}`,
+                  opacity: commitLevel === lvl ? 1 : 0.55,
                 }}
               >
                 <CommitBadge level={lvl} />
-                <span className="text-sm font-semibold" style={{ color: PLUM }}>
-                  {commitLevel === lvl ? "Currently selected" : "Select"}
-                </span>
               </button>
             ))}
+            </div>
+            <textarea
+              value={commitDraft}
+              onChange={(e) => setCommitDraft(e.target.value)}
+              className="w-full min-h-20 rounded-xl px-3 py-2 text-xs leading-relaxed outline-none resize-none"
+              style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}`, color: MUTED }}
+            />
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => {
+                  setCommitLevel(commitLevelBeforeEdit);
+                  setCommitDraft(commitText);
+                  setEditCommit(false);
+                }}
+                className="flex-1 py-2 rounded-xl text-xs font-black"
+                style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}`, color: PLUM }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setCommitText(commitDraft.trim());
+                  setEditCommit(false);
+                  markUpdated();
+                }}
+                className="flex-1 py-2 rounded-xl text-xs font-black"
+                style={{ backgroundColor: CORAL, color: PLUM }}
+              >
+                Save
+              </button>
+            </div>
           </div>
         ) : (
           <>
-            <div className="mb-2">
+            <div className="flex items-center gap-2 mb-2">
               <CommitBadge level={commitLevel} />
             </div>
             <p className="text-xs leading-relaxed" style={{ color: MUTED }}>
-              {commitDesc[commitLevel]}
+              {commitText}
             </p>
           </>
         )}
       </section>
       <section>
-        <p className="text-sm font-black mb-2" style={{ color: PLUM }}>
-          Financial Costs
-        </p>
-        {(() => {
+        <div className="flex items-center gap-2 mb-2">
+          <p className="text-sm font-black" style={{ color: PLUM }}>
+            Financial Costs
+          </p>
+          {isExcoMember && !editCosts && (
+            <button
+              onClick={() => setEditCosts(true)}
+              className="opacity-60 active:opacity-100"
+              aria-label="Edit financial costs"
+            >
+              <Pencil size={13} color={PLUM} />
+            </button>
+          )}
+        </div>
+        {!editCosts && (() => {
           const costs: Record<number, { label: string; amount: string }[]> = {
             1: [
               { label: "Annual membership fee", amount: "S$80" },
@@ -8303,12 +8529,15 @@ function DetailAboutTab({ cca, username }: { cca: CCA; username?: string }) {
               { label: "Shuttlecocks & kit", amount: "S$20–40" },
             ],
           };
-          const rows = costs[cca.id] ?? [
-            {
-              label: "Annual membership fee",
-              amount: "Contact CCA for details",
-            },
-          ];
+          const rows =
+            costRows.length > 0
+              ? costRows
+              : costs[cca.id] ?? [
+                  {
+                    label: "Annual membership fee",
+                    amount: "Contact CCA for details",
+                  },
+                ];
           return (
             <div className="space-y-2">
               {rows.map((r, i) => (
@@ -8331,10 +8560,269 @@ function DetailAboutTab({ cca, username }: { cca: CCA; username?: string }) {
             </div>
           );
         })()}
+        {editCosts && (
+          <div>
+            <div className="space-y-2">
+              {costRows.map((row, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    value={row.label}
+                    onChange={(e) =>
+                      setCostRows((rows) =>
+                        rows.map((item, i) =>
+                          i === index
+                            ? { ...item, label: e.target.value }
+                            : item,
+                        ),
+                      )
+                    }
+                    className="min-w-0 flex-1 rounded-xl px-3 py-2 text-xs outline-none"
+                    style={{
+                      backgroundColor: WHITE,
+                      border: `1.5px solid ${CORAL}`,
+                      color: PLUM,
+                    }}
+                  />
+                  <input
+                    value={row.amount}
+                    onChange={(e) =>
+                      setCostRows((rows) =>
+                        rows.map((item, i) =>
+                          i === index
+                            ? { ...item, amount: e.target.value }
+                            : item,
+                        ),
+                      )
+                    }
+                    className="w-28 rounded-xl px-3 py-2 text-xs outline-none"
+                    style={{
+                      backgroundColor: WHITE,
+                      border: `1.5px solid ${CORAL}`,
+                      color: PLUM,
+                    }}
+                  />
+                  <button
+                    onClick={() =>
+                      setCostRows((rows) =>
+                        rows.filter((_, itemIndex) => itemIndex !== index),
+                      )
+                    }
+                    className="w-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: DANGER_BG }}
+                    aria-label="Remove cost"
+                  >
+                    <Trash2 size={14} color="#B91C1C" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() =>
+                setCostRows((rows) => [
+                  ...rows,
+                  { label: "New cost", amount: "S$0" },
+                ])
+              }
+              className="w-full mt-2 py-2 rounded-xl text-xs font-black"
+              style={{ backgroundColor: WHITE, border: `1.5px dashed ${MUTED}`, color: MUTED }}
+            >
+              + Add cost
+            </button>
+            <div className="flex gap-2 mt-2">
+              <button
+              onClick={() => {
+                setEditCosts(false);
+                markUpdated();
+              }}
+                className="flex-1 py-2 rounded-xl text-xs font-black"
+                style={{
+                  backgroundColor: CREAM,
+                  border: `1.5px solid ${BORDER}`,
+                  color: PLUM,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => setEditCosts(false)}
+                className="flex-1 py-2 rounded-xl text-xs font-black"
+                style={{ backgroundColor: CORAL, color: PLUM }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        )}
       </section>
+      {customSections.map((section, sectionIndex) => (
+        <section key={section.id}>
+          {isExcoMember && editingSectionId === section.id ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <input
+                  value={sectionDraft.title}
+                  onChange={(e) => setSectionDraft((draft) => ({ ...draft, title: e.target.value }))}
+                  placeholder="Section title"
+                  className="min-w-0 flex-1 bg-transparent text-sm font-black outline-none"
+                  style={{ color: PLUM }}
+                />
+                <button
+                  onClick={() => setCustomSections((sections) => {
+                    if (sectionIndex === 0) return sections;
+                    const next = [...sections];
+                    [next[sectionIndex - 1], next[sectionIndex]] = [next[sectionIndex], next[sectionIndex - 1]];
+                    return next;
+                  })}
+                  disabled={sectionIndex === 0}
+                  className="rounded-lg p-1.5 disabled:opacity-25"
+                  style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
+                  aria-label="Move section up"
+                >
+                  <ArrowUp size={13} color={PLUM} />
+                </button>
+                <button
+                  onClick={() => setCustomSections((sections) => {
+                    if (sectionIndex === sections.length - 1) return sections;
+                    const next = [...sections];
+                    [next[sectionIndex], next[sectionIndex + 1]] = [next[sectionIndex + 1], next[sectionIndex]];
+                    return next;
+                  })}
+                  disabled={sectionIndex === customSections.length - 1}
+                  className="rounded-lg p-1.5 disabled:opacity-25"
+                  style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
+                  aria-label="Move section down"
+                >
+                  <ArrowDown size={13} color={PLUM} />
+                </button>
+                <button
+                  onClick={() => setSectionToDelete({ id: section.id, title: sectionDraft.title || "untitled" })}
+                  className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-bold"
+                  style={{ backgroundColor: DANGER_BG, color: CORAL }}
+                  aria-label="Delete section"
+                >
+                  <Trash2 size={12} color={CORAL} />
+                  Delete
+                </button>
+              </div>
+              <textarea
+                value={sectionDraft.body}
+                onChange={(e) => setSectionDraft((draft) => ({ ...draft, body: e.target.value }))}
+                placeholder="Add section details"
+                rows={3}
+                className="w-full rounded-xl px-3 py-2.5 text-sm outline-none resize-none"
+                style={{ backgroundColor: WHITE, border: `1.5px solid ${CORAL}`, color: PLUM }}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    if (newSectionId === section.id) {
+                      setCustomSections((sections) =>
+                        sections.filter((item) => item.id !== section.id),
+                      );
+                      setNewSectionId(null);
+                    }
+                    setEditingSectionId(null);
+                  }}
+                  className="flex-1 py-2 rounded-xl text-xs font-black"
+                  style={{ backgroundColor: CREAM, border: `1.5px solid ${BORDER}`, color: PLUM }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setCustomSections((sections) =>
+                      sections.map((item) =>
+                        item.id === section.id ? sectionDraft : item,
+                      ),
+                    );
+                    setEditingSectionId(null);
+                    setNewSectionId(null);
+                    markUpdated();
+                  }}
+                  className="flex-1 py-2 rounded-xl text-xs font-black"
+                  style={{ backgroundColor: CORAL, color: PLUM }}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <p className="text-sm font-black" style={{ color: PLUM }}>
+                  {section.title}
+                </p>
+                {isExcoMember && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setSectionDraft(section);
+                        setEditingSectionId(section.id);
+                      }}
+                      className="opacity-60"
+                      aria-label="Edit section"
+                    >
+                      <Pencil size={13} color={PLUM} />
+                    </button>
+                  </>
+                )}
+              </div>
+              <p className="text-sm leading-relaxed" style={{ color: MUTED }}>
+                {section.body}
+              </p>
+            </div>
+          )}
+        </section>
+      ))}
+      {isExcoMember && (
+        <button
+          onClick={() => {
+            const id = Date.now();
+            const section = { id, title: "", body: "" };
+            setCustomSections((sections) => [...sections, section]);
+            setSectionDraft(section);
+            setEditingSectionId(id);
+            setNewSectionId(id);
+          }}
+          className="w-full rounded-2xl py-4 text-sm font-bold active:opacity-70"
+          style={{ border: `1.5px dashed ${MUTED}`, color: MUTED }}
+        >
+          + Add a section
+        </button>
+      )}
       <p className="text-xs" style={{ color: MUTED }}>
-        Information last updated Aug 2026
+        Information last updated {lastUpdated}
       </p>
+      {sectionToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-6" style={{ backgroundColor: "rgba(0,0,0,0.38)" }}>
+          <div className="w-full max-w-sm rounded-2xl p-5" style={{ backgroundColor: WHITE, boxShadow: "0 12px 35px rgba(0,0,0,0.2)" }}>
+            <p className="text-base font-black" style={{ color: PLUM }}>Delete section?</p>
+            <p className="mt-2 text-sm leading-relaxed" style={{ color: MUTED }}>
+              Are you sure you want to delete “{sectionToDelete.title}”? This cannot be undone.
+            </p>
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={() => setSectionToDelete(null)}
+                className="flex-1 py-2.5 rounded-xl text-xs font-black"
+                style={{ backgroundColor: CREAM, border: `1.5px solid ${BORDER}`, color: PLUM }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setCustomSections((sections) => sections.filter((item) => item.id !== sectionToDelete.id));
+                  setSectionToDelete(null);
+                  markUpdated();
+                }}
+                className="flex-1 py-2.5 rounded-xl text-xs font-black"
+                style={{ backgroundColor: CORAL, color: PLUM }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -8346,16 +8834,64 @@ type EventDetailData = {
   date: string;
   time: string;
   venue?: string;
+  description?: string;
+  eventIndex?: number;
+  startEditing?: boolean;
 };
+
+const eventDateToInput = (date: string) => {
+  const match = date.match(/^(\d{1,2}) ([A-Za-z]{3}) (\d{4})$/);
+  if (!match) return "";
+  const month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(match[2]);
+  return month < 0 ? "" : `${match[3]}-${String(month + 1).padStart(2, "0")}-${match[1].padStart(2, "0")}`;
+};
+
+const eventDateFromInput = (date: string) => {
+  if (!date) return "";
+  const [year, month, day] = date.split("-");
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${Number(day)} ${months[Number(month) - 1]} ${year}`;
+};
+
+const timeToInput = (time: string) => {
+  const match = time.trim().match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i);
+  if (!match) return "";
+  let hour = Number(match[1]) % 12;
+  if (match[3].toLowerCase() === "pm") hour += 12;
+  return `${String(hour).padStart(2, "0")}:${match[2]}`;
+};
+
+const timeFromInput = (time: string) => {
+  if (!time) return "";
+  const [hourValue, minutes] = time.split(":");
+  const hour = Number(hourValue);
+  return `${hour % 12 || 12}:${minutes}${hour >= 12 ? "pm" : "am"}`;
+};
+
+const eventTimeInputs = (time: string) => {
+  const [start = "", end = ""] = time.split(/\s*[–-]\s*/);
+  return [timeToInput(start), timeToInput(end)] as const;
+};
+
+const eventTimeFromInputs = (start: string, end: string) =>
+  [timeFromInput(start), timeFromInput(end)].filter(Boolean).join(" – ");
 
 function EventDetailPage({
   event,
   onBack,
+  canEdit = false,
+  onSave,
+  onCancel,
 }: {
   event: EventDetailData;
   onBack: () => void;
+  canEdit?: boolean;
+  onSave?: (event: EventDetailData) => void;
+  onCancel?: () => void;
 }) {
   const [vis, setVis] = React.useState(false);
+  const [editing, setEditing] = React.useState(Boolean(event.startEditing));
+  const [draft, setDraft] = React.useState(event);
   React.useEffect(() => {
     const t = requestAnimationFrame(() => setVis(true));
     return () => cancelAnimationFrame(t);
@@ -8387,18 +8923,29 @@ function EventDetailPage({
         <p className="text-base font-black" style={{ color: PLUM }}>
           Event Details
         </p>
+        {canEdit && !editing && (
+          <button onClick={() => setEditing(true)} className="ml-auto p-2 opacity-70">
+            <Pencil size={16} color={PLUM} />
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-6" style={hideScroll}>
-        <p
-          className="text-2xl font-black leading-tight mb-1"
-          style={{ color: PLUM }}
-        >
-          {event.title}
-        </p>
-        {event.subtitle && (
+        {editing ? (
+          <input
+            value={draft.title}
+            onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+            placeholder="Event name"
+            aria-label="Event name"
+            className="w-full rounded-2xl px-4 py-3 text-2xl font-black leading-tight mb-1 outline-none"
+            style={{ backgroundColor: WHITE, border: `2px solid ${CORAL}`, color: PLUM }}
+          />
+        ) : (
+          <p className="text-2xl font-black leading-tight mb-1" style={{ color: PLUM }}>{draft.title}</p>
+        )}
+        {draft.subtitle && (
           <p className="text-sm mb-6" style={{ color: MUTED }}>
-            {event.subtitle}
+            {draft.subtitle}
           </p>
         )}
         {!event.subtitle && <div className="mb-6" />}
@@ -8421,9 +8968,7 @@ function EventDetailPage({
               >
                 Date
               </p>
-              <p className="text-sm font-black mt-0.5" style={{ color: PLUM }}>
-                {event.date}
-              </p>
+              {editing ? <input type="date" value={eventDateToInput(draft.date)} onChange={(e) => setDraft((d) => ({ ...d, date: eventDateFromInput(e.target.value) }))} className="mt-0.5 bg-transparent text-sm font-black outline-none" style={{ color: PLUM }} /> : <p className="text-sm font-black mt-0.5" style={{ color: PLUM }}>{draft.date}</p>}
             </div>
           </div>
 
@@ -8444,9 +8989,7 @@ function EventDetailPage({
               >
                 Time
               </p>
-              <p className="text-sm font-black mt-0.5" style={{ color: PLUM }}>
-                {event.time}
-              </p>
+              {editing ? <div className="flex gap-2 mt-0.5"><input type="time" value={eventTimeInputs(draft.time)[0]} onChange={(e) => setDraft((d) => ({ ...d, time: eventTimeFromInputs(e.target.value, eventTimeInputs(d.time)[1]) }))} className="min-w-0 bg-transparent text-sm font-black outline-none" style={{ color: PLUM }} /><span style={{ color: MUTED }}>–</span><input type="time" value={eventTimeInputs(draft.time)[1]} onChange={(e) => setDraft((d) => ({ ...d, time: eventTimeFromInputs(eventTimeInputs(d.time)[0], e.target.value) }))} className="min-w-0 bg-transparent text-sm font-black outline-none" style={{ color: PLUM }} /></div> : <p className="text-sm font-black mt-0.5" style={{ color: PLUM }}>{draft.time}</p>}
             </div>
           </div>
 
@@ -8469,9 +9012,9 @@ function EventDetailPage({
               </p>
               <p
                 className="text-sm font-black mt-0.5"
-                style={{ color: event.venue ? PLUM : MUTED }}
+                style={{ color: draft.venue ? PLUM : MUTED }}
               >
-                {event.venue ?? "TBA"}
+                {editing ? <input value={draft.venue ?? ""} onChange={(e) => setDraft((d) => ({ ...d, venue: e.target.value }))} placeholder="Add venue" className="bg-transparent text-sm font-black outline-none" style={{ color: PLUM }} /> : draft.venue ?? "TBA"}
               </p>
             </div>
           </div>
@@ -8485,19 +9028,9 @@ function EventDetailPage({
           >
             Description
           </p>
-          <div
-            className="rounded-2xl p-4 space-y-2.5"
-            style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}` }}
-          >
-            {[90, 75, 100, 60, 85, 45].map((w, i) => (
-              <div
-                key={i}
-                className="h-2.5 rounded-full"
-                style={{ width: `${w}%`, backgroundColor: BORDER }}
-              />
-            ))}
-          </div>
+          {editing ? <textarea value={draft.description ?? ""} onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} placeholder="Add event details" className="w-full min-h-28 rounded-2xl p-4 text-sm outline-none resize-none" style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}`, color: PLUM }} /> : <div className="rounded-2xl p-4 text-sm leading-relaxed" style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}`, color: draft.description ? PLUM : MUTED }}>{draft.description || "No event description has been added yet."}</div>}
         </div>
+        {editing && <div className="flex gap-2 mt-5"><button onClick={() => { if (event.startEditing) { onCancel?.(); } else { setDraft(event); setEditing(false); } }} className="flex-1 py-3 rounded-xl text-sm font-black" style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}`, color: PLUM }}>Cancel</button><button onClick={() => { onSave?.(draft); setEditing(false); }} className="flex-1 py-3 rounded-xl text-sm font-black" style={{ backgroundColor: CORAL, color: PLUM }}>Save changes</button></div>}
       </div>
     </div>
   );
@@ -8511,20 +9044,34 @@ function DetailEventsTab({
   setRemovedEvtKeys,
   onOpenEvent,
   onReminderChange,
+  userMemberships,
+  events: externalEvents,
+  setEvents: setExternalEvents,
 }: {
   cca: CCA;
   notifiedDetailEvts?: Set<string>;
   setNotifiedDetailEvts?: React.Dispatch<React.SetStateAction<Set<string>>>;
   removedEvtKeys?: Set<string>;
   setRemovedEvtKeys?: React.Dispatch<React.SetStateAction<Set<string>>>;
-  onOpenEvent?: (ev: EventDetailData) => void;
+  onOpenEvent?: (ev: EventDetailData & { eventIndex?: number }) => void;
   onReminderChange?: (turnedOn: boolean, undoFn: () => void) => void;
+  userMemberships?: number[];
+  events?: CcaDetailEvent[];
+  setEvents?: React.Dispatch<React.SetStateAction<CcaDetailEvent[]>>;
 }) {
   const { isDark } = useDark();
-  const events = CCA_DETAIL_EVENTS[cca.id] ?? [
+  const [localEvents, setLocalEvents] = React.useState<CcaDetailEvent[]>(
+    externalEvents ?? CCA_DETAIL_EVENTS[cca.id] ?? [
     { name: "Info Session", date: "20 Aug 2026", time: "6:00pm – 7:30pm" },
     { name: "Open Trial", date: "3 Sep 2026", time: "5:00pm – 7:00pm" },
-  ];
+    ],
+  );
+  const events = externalEvents ?? localEvents;
+  const setEvents = setExternalEvents ?? setLocalEvents;
+  const [editEvents, setEditEvents] = React.useState(false);
+  const [eventsBeforeEdit, setEventsBeforeEdit] = React.useState<CcaDetailEvent[]>([]);
+  const [eventToDelete, setEventToDelete] = React.useState<{ index: number; name: string } | null>(null);
+  const isExcoMember = isExcoForCca(cca.id, userMemberships);
 
   const toggleEvt = (key: string) => {
     if (!setNotifiedDetailEvts) return;
@@ -8559,16 +9106,104 @@ function DetailEventsTab({
 
   const cardBg = isDark ? "#2A2A2A" : LIGHT_GOLD;
   const bellBg = isDark ? "rgba(255,255,255,0.10)" : LIGHT_PEACH;
+  const handleAddEvent = () => {
+    const newEvent = {
+      name: "New event",
+      date: "28 Aug 2026",
+      time: "6:00pm – 7:00pm",
+    };
+    const eventIndex = events.length;
+    setEvents((items) => [...items, newEvent]);
+    onOpenEvent?.({
+      title: newEvent.name,
+      subtitle: cca.name,
+      date: newEvent.date,
+      time: newEvent.time,
+      eventIndex,
+      startEditing: true,
+    });
+  };
 
   return (
     <div className="px-5 py-4 pb-10">
-      <p className="text-base font-black mb-4" style={{ color: PLUM }}>
-        Upcoming Events
-      </p>
+      <div className="flex items-center gap-2 mb-4">
+        <p className="text-base font-black" style={{ color: PLUM }}>
+          Upcoming Events
+        </p>
+        {isExcoMember && !editEvents && (
+          <button onClick={() => { setEventsBeforeEdit(events.map((event) => ({ ...event }))); setEditEvents(true); }} className="opacity-60">
+            <Pencil size={14} color={PLUM} />
+          </button>
+        )}
+      </div>
       <div className="space-y-3">
         {events.map((e, i) => {
           const key = `${cca.id}-${i}`;
           const on = notifiedDetailEvts ? notifiedDetailEvts.has(key) : false;
+          if (editEvents) {
+            return (
+              <div
+                key={i}
+                className="rounded-2xl p-3 space-y-2"
+                style={{ backgroundColor: WHITE, border: `1.5px solid ${CORAL}` }}
+              >
+                <div className="flex items-center gap-2">
+                  <input
+                    value={e.name}
+                    onChange={(ev) =>
+                      setEvents((items) =>
+                        items.map((item, index) =>
+                          index === i ? { ...item, name: ev.target.value } : item,
+                        ),
+                      )
+                    }
+                    className="min-w-0 flex-1 bg-transparent text-sm font-black outline-none"
+                    style={{ color: PLUM }}
+                  />
+                  <button
+                    onClick={() => setEventToDelete({ index: i, name: e.name || "untitled event" })}
+                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold"
+                    style={{ backgroundColor: DANGER_BG, color: CORAL }}
+                    aria-label="Delete event"
+                  >
+                    <Trash2 size={12} color={CORAL} />
+                    Delete
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={eventDateToInput(e.date)}
+                    onChange={(ev) =>
+                      setEvents((items) =>
+                        items.map((item, index) =>
+                          index === i
+                            ? { ...item, date: eventDateFromInput(ev.target.value) }
+                            : item,
+                        ),
+                      )
+                    }
+                    className="min-w-0 flex-1 bg-transparent text-xs outline-none"
+                    style={{ color: MUTED }}
+                  />
+                  <input
+                    type="time"
+                    value={eventTimeInputs(e.time)[0]}
+                    onChange={(ev) => setEvents((items) => items.map((item, index) => index === i ? { ...item, time: eventTimeFromInputs(ev.target.value, eventTimeInputs(item.time)[1]) } : item))}
+                    className="min-w-0 flex-1 bg-transparent text-xs outline-none"
+                    style={{ color: MUTED }}
+                  />
+                  <input
+                    type="time"
+                    value={eventTimeInputs(e.time)[1]}
+                    onChange={(ev) => setEvents((items) => items.map((item, index) => index === i ? { ...item, time: eventTimeFromInputs(eventTimeInputs(item.time)[0], ev.target.value) } : item))}
+                    className="min-w-0 flex-1 bg-transparent text-xs outline-none"
+                    style={{ color: MUTED }}
+                  />
+                </div>
+              </div>
+            );
+          }
           return (
             <div
               key={i}
@@ -8583,6 +9218,9 @@ function DetailEventsTab({
                   subtitle: cca.name,
                   date: e.date,
                   time: e.time,
+                  venue: e.venue,
+                  description: e.description,
+                  eventIndex: i,
                 })
               }
             >
@@ -8616,6 +9254,61 @@ function DetailEventsTab({
           );
         })}
       </div>
+
+      {editEvents && (
+        <div className="flex gap-2 mt-3">
+          <button
+            onClick={handleAddEvent}
+            className="flex-1 py-2 rounded-xl text-xs font-black"
+            style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}`, color: PLUM }}
+          >
+            Add event
+          </button>
+          <button
+            onClick={() => { setEvents(eventsBeforeEdit); setEditEvents(false); }}
+            className="flex-1 py-2 rounded-xl text-xs font-black"
+            style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}`, color: PLUM }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => setEditEvents(false)}
+            className="flex-1 py-2 rounded-xl text-xs font-black"
+            style={{ backgroundColor: CORAL, color: PLUM }}
+          >
+            Save
+          </button>
+        </div>
+      )}
+
+      {eventToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-6" style={{ backgroundColor: "rgba(0,0,0,0.38)" }}>
+          <div className="w-full max-w-sm rounded-2xl p-5" style={{ backgroundColor: WHITE, boxShadow: "0 12px 35px rgba(0,0,0,0.2)" }}>
+            <p className="text-base font-black" style={{ color: PLUM }}>Delete event?</p>
+            <p className="mt-2 text-sm leading-relaxed" style={{ color: MUTED }}>
+              Are you sure you want to delete “{eventToDelete.name}”? This cannot be undone.
+            </p>
+            <div className="flex gap-2 mt-5">
+              <button onClick={() => setEventToDelete(null)} className="flex-1 py-2.5 rounded-xl text-xs font-black" style={{ backgroundColor: CREAM, border: `1.5px solid ${BORDER}`, color: PLUM }}>
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const deletedIndex = eventToDelete.index;
+                  setEvents((items) => items.filter((_, index) => index !== deletedIndex));
+                  setRemovedEvtKeys?.((previous) => new Set(previous).add(String(-(cca.id * 100 + deletedIndex))));
+                  setEventToDelete(null);
+                }}
+                className="flex-1 py-2.5 rounded-xl text-xs font-black"
+                style={{ backgroundColor: CORAL, color: PLUM }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -8857,9 +9550,17 @@ function ReportPage({
 function ReviewThreadPage({
   review,
   onBack,
+  username,
+  avatar,
+  userReplies,
+  setUserReplies,
 }: {
-  review: (typeof REVIEW_DATA)[0];
+  review: UserReview;
   onBack: () => void;
+  username?: string;
+  avatar?: string;
+  userReplies: UserReply[];
+  setUserReplies: React.Dispatch<React.SetStateAction<UserReply[]>>;
 }) {
   const [vis, setVis] = React.useState(false);
   React.useEffect(() => {
@@ -8872,11 +9573,21 @@ function ReviewThreadPage({
   const [replyPosition, setReplyPosition] = React.useState("");
   const [replyTarget, setReplyTarget] = React.useState<string>(review.user);
   const [reportId, setReportId] = React.useState<number | null>(null);
+  const [editingReplyId, setEditingReplyId] = React.useState<number | null>(
+    null,
+  );
+  const [editReplyText, setEditReplyText] = React.useState("");
+  const [deleteReplyId, setDeleteReplyId] = React.useState<number | null>(
+    null,
+  );
   const [threadVotes, setThreadVotes] = React.useState<
     Record<string, 1 | -1 | 0>
   >({});
   const inputRef = React.useRef<HTMLInputElement>(null);
-  const replies = REVIEW_THREADS[review.id] ?? [];
+  const replies: UserReply[] = [
+    ...userReplies,
+    ...(REVIEW_THREADS[review.id] ?? []),
+  ];
 
   const goBack = () => {
     setVis(false);
@@ -8898,9 +9609,43 @@ function ReviewThreadPage({
 
   const handleSend = () => {
     if (!replyText.trim()) return;
+    setUserReplies((prev) => [
+      {
+        id: Date.now(),
+        user: username ?? "you",
+        year: replyPosition.trim() || "AY25/26 Member",
+        isExco: false,
+        upvotes: 0,
+        text: replyText.trim(),
+        isOwner: true,
+      },
+      ...prev,
+    ]);
     setReplyText("");
     setReplyTarget(review.user);
     inputRef.current?.blur();
+  };
+
+  const handleSaveReply = () => {
+    if (!editReplyText.trim() || editingReplyId === null) return;
+    setUserReplies((prev) =>
+      prev.map((reply) =>
+        reply.id === editingReplyId
+          ? { ...reply, text: editReplyText.trim() }
+          : reply,
+      ),
+    );
+    setEditingReplyId(null);
+    setEditReplyText("");
+  };
+
+  const handleDeleteReply = (id: number) => {
+    setUserReplies((prev) => prev.filter((reply) => reply.id !== id));
+    if (editingReplyId === id) {
+      setEditingReplyId(null);
+      setEditReplyText("");
+    }
+    setDeleteReplyId(null);
   };
 
   if (reportId !== null) {
@@ -8922,6 +9667,8 @@ function ReviewThreadPage({
     upvotes,
     text,
     onReport,
+    isOwner = false,
+    isDeleted = false,
     small = false,
   }: {
     itemId: string;
@@ -8931,6 +9678,8 @@ function ReviewThreadPage({
     upvotes: number;
     text: string;
     onReport: () => void;
+    isOwner?: boolean;
+    isDeleted?: boolean;
     small?: boolean;
   }) => {
     const myVote = threadVotes[itemId] ?? 0;
@@ -8953,7 +9702,9 @@ function ReviewThreadPage({
             className={`${small ? "w-7 h-7 text-xs" : "w-8 h-8 text-sm"} rounded-full flex items-center justify-center font-black flex-shrink-0`}
             style={{ backgroundColor: CORAL, color: FWHITE }}
           >
-            {user[0].toUpperCase()}
+            {isOwner && !isDeleted
+              ? avatar ?? "🙂"
+              : user[0].toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
@@ -8974,16 +9725,35 @@ function ReviewThreadPage({
               {year}
             </p>
           </div>
-          <button onClick={onReport} className="flex-shrink-0 opacity-50">
-            <Flag size={12} color={MUTED} />
-          </button>
+          {!isOwner && !isDeleted && (
+            <button onClick={onReport} className="flex-shrink-0 opacity-50">
+              <Flag size={12} color={MUTED} />
+            </button>
+          )}
         </div>
-        <p
-          className={`${small ? "text-[12px]" : "text-[13px]"} leading-relaxed px-3.5 pb-2.5`}
-          style={{ color: MUTED }}
-        >
-          {text}
-        </p>
+        {isOwner && editingReplyId === Number(itemId) ? (
+          <div className="px-3.5 pb-2.5">
+            <textarea
+              value={editReplyText}
+              onChange={(e) => setEditReplyText(e.target.value)}
+              className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none resize-none"
+              rows={3}
+              style={{
+                backgroundColor: WHITE,
+                border: `1.5px solid ${CORAL}`,
+                color: PLUM,
+                fontFamily: "'Nunito Sans',sans-serif",
+              }}
+            />
+          </div>
+        ) : (
+          <p
+            className={`${small ? "text-[12px]" : "text-[13px]"} leading-relaxed px-3.5 pb-2.5`}
+            style={{ color: MUTED }}
+          >
+            {text}
+          </p>
+        )}
         <div
           className="flex items-center gap-2.5 px-3.5 pb-3 pt-1.5"
           style={{ borderTop: `1px solid ${BORDER}` }}
@@ -9031,6 +9801,53 @@ function ReviewThreadPage({
               fill={myVote === -1 ? "#B91C1C" : "none"}
             />
           </button>
+          {isOwner && (
+            <div className="ml-auto flex items-center gap-2">
+              {editingReplyId === Number(itemId) ? (
+                <>
+                  <button
+                    onClick={() => {
+                      setEditingReplyId(null);
+                      setEditReplyText("");
+                    }}
+                    className="text-[11px] font-bold active:opacity-60"
+                    style={{ color: MUTED }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveReply}
+                    disabled={!editReplyText.trim()}
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-black"
+                    style={{
+                      backgroundColor: editReplyText.trim() ? CORAL : BORDER,
+                      color: editReplyText.trim() ? PLUM : MUTED,
+                    }}
+                  >
+                    Save
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    setEditingReplyId(Number(itemId));
+                    setEditReplyText(text);
+                  }}
+                  className="flex h-5 items-center gap-1 text-[11px] font-bold leading-none"
+                  style={{ color: MUTED }}
+                >
+                  <Pencil size={12} />
+                  <span>Edit</span>
+                </button>
+              )}
+              <button
+                onClick={() => setDeleteReplyId(Number(itemId))}
+                aria-label="Delete reply"
+              >
+                <Trash2 size={13} color="#B91C1C" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -9077,6 +9894,7 @@ function ReviewThreadPage({
           upvotes={review.upvotes}
           text={review.text}
           onReport={() => setReportId(review.id)}
+          isDeleted={review.isDeleted}
         />
 
         {/* Replies with indent + vertical connecting line */}
@@ -9102,6 +9920,7 @@ function ReviewThreadPage({
                   upvotes={r.upvotes}
                   text={r.text}
                   onReport={() => setReportId(r.id)}
+                  isOwner={r.isOwner}
                   small
                 />
               ))}
@@ -9134,19 +9953,6 @@ function ReviewThreadPage({
             </button>
           </div>
         )}
-        {/* Position field */}
-        <div
-          className="rounded-xl px-3 py-2 mb-2"
-          style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}` }}
-        >
-          <input
-            value={replyPosition}
-            onChange={(e) => setReplyPosition(e.target.value)}
-            placeholder="Your position, e.g. AY24/25 Member"
-            className="w-full bg-transparent text-xs outline-none"
-            style={{ color: MUTED, fontFamily: "'Nunito Sans',sans-serif" }}
-          />
-        </div>
         {/* Reply input */}
         <div
           className="flex items-center gap-3 rounded-2xl px-4 py-3"
@@ -9178,36 +9984,99 @@ function ReviewThreadPage({
             <ArrowRight size={14} color={replyText.trim() ? PLUM : MUTED} />
           </button>
         </div>
+        <div
+          className="rounded-xl px-3 py-2 mt-2"
+          style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}` }}
+        >
+          <input
+            value={replyPosition}
+            onChange={(e) => setReplyPosition(e.target.value)}
+            placeholder="Your position (optional), e.g. AY24/25 Member"
+            className="w-full bg-transparent text-xs outline-none"
+            style={{ color: PLUM, fontFamily: "'Nunito Sans',sans-serif" }}
+          />
+        </div>
       </div>
+
+      {deleteReplyId !== null && (
+        <div
+          className="absolute inset-0 z-[60] flex items-center justify-center px-6"
+          style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
+          onClick={() => setDeleteReplyId(null)}
+        >
+          <div
+            className="w-full max-w-[340px] rounded-3xl p-6"
+            style={{ backgroundColor: WHITE }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-black mb-2" style={{ color: PLUM }}>
+              Delete reply?
+            </h2>
+            <p className="text-sm leading-relaxed mb-6" style={{ color: MUTED }}>
+              Are you sure you want to delete your reply? This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteReplyId(null)}
+                className="flex-1 py-3 rounded-2xl text-sm font-black"
+                style={{
+                  backgroundColor: CREAM,
+                  border: `1.5px solid ${BORDER}`,
+                  color: PLUM,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteReply(deleteReplyId)}
+                className="flex-1 py-3 rounded-2xl text-sm font-black"
+                style={{ backgroundColor: DANGER_BG, color: "#B91C1C" }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function DetailReviewsTab({
-  cca,
   onOpenThread,
   username,
-  isMember,
+  avatar,
+  initialPosition,
+  userReviews,
+  setUserReviews,
+  onFirstReview,
+  userRepliesByReview,
 }: {
-  cca: CCA;
-  onOpenThread: (r: (typeof REVIEW_DATA)[0]) => void;
+  onOpenThread: (r: UserReview) => void;
   username?: string;
-  isMember?: boolean;
+  avatar?: string;
+  initialPosition?: string;
+  userReviews: UserReview[];
+  setUserReviews: React.Dispatch<React.SetStateAction<UserReview[]>>;
+  onFirstReview: () => void;
+  userRepliesByReview: Record<number, UserReply[]>;
 }) {
   const [reportId, setReportId] = React.useState<number | null>(null);
   const [newReview, setNewReview] = React.useState("");
-  const [position, setPosition] = React.useState(
-    isMember ? "AY25/26 Member" : "",
+  const [editingReviewId, setEditingReviewId] = React.useState<number | null>(
+    null,
   );
+  const [editReviewText, setEditReviewText] = React.useState("");
+  const [deleteReviewId, setDeleteReviewId] = React.useState<number | null>(
+    null,
+  );
+  const [position, setPosition] = React.useState(initialPosition ?? "");
   const [anonymous, setAnonymous] = React.useState(false);
-  const [localReviews, setLocalReviews] = React.useState<typeof REVIEW_DATA>(
-    [],
-  );
   const [reviewVotes, setReviewVotes] = React.useState<
     Record<number, 1 | -1 | 0>
   >({});
 
-  const allReviews = [...localReviews, ...REVIEW_DATA];
+  const allReviews = [...userReviews, ...REVIEW_DATA];
 
   const handleVote = (id: number, dir: 1 | -1) => {
     setReviewVotes((prev) => {
@@ -9221,14 +10090,61 @@ function DetailReviewsTab({
     const review = {
       id: Date.now(),
       user: username ?? "you",
-      year: anonymous ? "Anonymous" : position.trim() || "AY25/26 Member",
+      year: anonymous ? "" : position.trim(),
       isExco: false,
       upvotes: 0,
       replies: 0,
       text: newReview.trim(),
+      isOwner: true,
     };
-    setLocalReviews((prev) => [review, ...prev]);
+    setUserReviews((prev) => [review, ...prev]);
+    onFirstReview();
     setNewReview("");
+  };
+
+  const handleEdit = (review: UserReview) => {
+    setEditingReviewId(review.id);
+    setEditReviewText(review.text);
+  };
+
+  const handleDelete = (id: number) => {
+    const hasReplies =
+      (REVIEW_THREADS[id] ?? []).length +
+        (userRepliesByReview[id] ?? []).length >
+      0;
+    setUserReviews((prev) =>
+      hasReplies
+        ? prev.map((review) =>
+            review.id === id
+              ? {
+                  ...review,
+                  user: "Deleted review",
+                  year: "",
+                  text: "This review has been deleted.",
+                  isDeleted: true,
+                }
+              : review,
+          )
+        : prev.filter((review) => review.id !== id),
+    );
+    if (editingReviewId === id) {
+      setEditingReviewId(null);
+      setEditReviewText("");
+    }
+    setDeleteReviewId(null);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editReviewText.trim() || editingReviewId === null) return;
+    setUserReviews((prev) =>
+      prev.map((review) =>
+        review.id === editingReviewId
+          ? { ...review, text: editReviewText.trim() }
+          : review,
+      ),
+    );
+    setEditingReviewId(null);
+    setEditReviewText("");
   };
 
   const tabScrollRef = React.useRef<HTMLDivElement>(null);
@@ -9329,7 +10245,9 @@ function DetailReviewsTab({
       {/* Reviews */}
       <div className="space-y-3">
         {allReviews.map((r) => {
-          const threadCount = (REVIEW_THREADS[r.id] ?? []).length;
+          const threadCount =
+            (REVIEW_THREADS[r.id] ?? []).length +
+            (userRepliesByReview[r.id] ?? []).length;
           const vote = reviewVotes[r.id] ?? 0;
           const displayUpvotes = r.upvotes + vote;
           return (
@@ -9342,12 +10260,20 @@ function DetailReviewsTab({
               }}
             >
               <div className="flex items-center gap-2.5 px-3.5 pt-3.5 pb-2">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0"
-                  style={{ backgroundColor: CORAL, color: FWHITE }}
-                >
-                  {r.user[0].toUpperCase()}
-                </div>
+                {r.isOwner && !r.isDeleted ? (
+                  <AvatarCircle
+                    av={avatar ?? "🙂"}
+                    size="w-8 h-8"
+                    textSize="text-sm"
+                  />
+                ) : (
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0"
+                    style={{ backgroundColor: CORAL, color: FWHITE }}
+                  >
+                    {r.user[0].toUpperCase()}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <p
@@ -9367,19 +10293,40 @@ function DetailReviewsTab({
                     {r.year}
                   </p>
                 </div>
-                <button
-                  onClick={() => setReportId(r.id)}
-                  className="flex-shrink-0 opacity-60"
-                >
-                  <Flag size={13} color={MUTED} />
-                </button>
+                {!r.isOwner && !r.isDeleted && (
+                  <button
+                    onClick={() => setReportId(r.id)}
+                    className="flex-shrink-0 opacity-60"
+                    aria-label="Report review"
+                  >
+                    <Flag size={13} color={MUTED} />
+                  </button>
+                )}
               </div>
-              <p
-                className="text-[13px] leading-relaxed px-3.5 pb-2.5"
-                style={{ color: MUTED }}
-              >
-                {r.text}
-              </p>
+              {editingReviewId === r.id ? (
+                <div className="px-3.5 pb-2.5">
+                  <textarea
+                    value={editReviewText}
+                    onChange={(e) => setEditReviewText(e.target.value)}
+                    className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none resize-none"
+                    rows={3}
+                    style={{
+                      backgroundColor: WHITE,
+                      border: `1.5px solid ${CORAL}`,
+                      color: PLUM,
+                      fontFamily: "'Nunito Sans',sans-serif",
+                    }}
+                    aria-label="Edit your review"
+                  />
+                </div>
+              ) : (
+                <p
+                  className="text-[13px] leading-relaxed px-3.5 pb-2.5"
+                  style={{ color: MUTED }}
+                >
+                  {r.text}
+                </p>
+              )}
               {/* Reactions */}
               <div
                 className="flex items-center gap-3 px-3.5 pb-3 pt-2"
@@ -9387,24 +10334,24 @@ function DetailReviewsTab({
               >
                 <button
                   onClick={() => onOpenThread(r)}
-                  className="flex items-center gap-1 active:opacity-70"
+                  className="flex h-5 items-center gap-1 leading-none active:opacity-70"
                 >
                   <MessageSquare
                     size={13}
                     color={threadCount > 0 ? CORAL : MUTED}
                   />
                   <span
-                    className="text-[11px] font-semibold"
+                    className="text-[12px] font-black leading-none"
                     style={{ color: threadCount > 0 ? CORAL : MUTED }}
                   >
                     {threadCount > 0 ? threadCount : r.replies}
                   </span>
                 </button>
-                <span className="text-[11px]" style={{ color: BORDER }}>
+                <span className="text-[11px] leading-none" style={{ color: BORDER }}>
                   |
                 </span>
                 <span
-                  className="text-[12px] font-black"
+                  className="text-[12px] font-black leading-none"
                   style={{
                     color:
                       displayUpvotes > 0
@@ -9437,11 +10384,97 @@ function DetailReviewsTab({
                     color={vote === -1 ? "#B91C1C" : MUTED}
                   />
                 </button>
+                {r.isOwner && !r.isDeleted && (
+                  <div className="ml-auto flex items-center gap-2">
+                    {editingReviewId === r.id ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            setEditingReviewId(null);
+                            setEditReviewText("");
+                          }}
+                          className="text-[11px] font-bold active:opacity-60"
+                          style={{ color: MUTED }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSaveEdit}
+                          disabled={!editReviewText.trim()}
+                          className="px-2.5 py-1 rounded-lg text-[11px] font-black active:opacity-60"
+                          style={{
+                            backgroundColor: editReviewText.trim() ? CORAL : BORDER,
+                            color: editReviewText.trim() ? PLUM : MUTED,
+                          }}
+                        >
+                          Save
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => handleEdit(r)}
+                        className="flex h-5 items-center gap-1 text-[11px] font-bold leading-none active:opacity-60"
+                        style={{ color: MUTED }}
+                      >
+                        <Pencil size={12} />
+                        <span className="leading-none">Edit</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setDeleteReviewId(r.id)}
+                      className="active:opacity-60"
+                      aria-label="Delete review"
+                    >
+                      <Trash2 size={13} color="#B91C1C" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           );
         })}
       </div>
+
+      {deleteReviewId !== null && (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center px-6"
+          style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
+          onClick={() => setDeleteReviewId(null)}
+        >
+          <div
+            className="w-full max-w-[340px] rounded-3xl p-6"
+            style={{ backgroundColor: WHITE }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-black mb-2" style={{ color: PLUM }}>
+              Delete review?
+            </h2>
+            <p className="text-sm leading-relaxed mb-6" style={{ color: MUTED }}>
+              Your review text will be removed, but existing replies will remain visible.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteReviewId(null)}
+                className="flex-1 py-3 rounded-2xl text-sm font-black"
+                style={{
+                  backgroundColor: CREAM,
+                  border: `1.5px solid ${BORDER}`,
+                  color: PLUM,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deleteReviewId)}
+                className="flex-1 py-3 rounded-2xl text-sm font-black"
+                style={{ backgroundColor: DANGER_BG, color: "#B91C1C" }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -9458,12 +10491,20 @@ function CcaDetailPage({
   onBack,
   onMainTabChange,
   username,
+  avatar,
   notifiedDetailEvts,
   setNotifiedDetailEvts,
   userMemberships,
   removedEvtKeys,
   setRemovedEvtKeys,
   onReminderChange,
+  detailEvents,
+  setDetailEvents,
+  userReviews,
+  setUserReviews,
+  onFirstReview,
+  userRepliesByReview,
+  setUserRepliesByReview,
 }: {
   cca: CCA;
   saved: boolean;
@@ -9471,12 +10512,22 @@ function CcaDetailPage({
   onBack: () => void;
   onMainTabChange: (t: Tab) => void;
   username?: string;
+  avatar?: string;
   notifiedDetailEvts?: Set<string>;
   setNotifiedDetailEvts?: React.Dispatch<React.SetStateAction<Set<string>>>;
   userMemberships?: number[];
   removedEvtKeys?: Set<string>;
   setRemovedEvtKeys?: React.Dispatch<React.SetStateAction<Set<string>>>;
   onReminderChange?: (turnedOn: boolean, undoFn: () => void) => void;
+  detailEvents?: CcaDetailEvent[];
+  setDetailEvents?: React.Dispatch<React.SetStateAction<CcaDetailEvent[]>>;
+  userReviews: UserReview[];
+  setUserReviews: React.Dispatch<React.SetStateAction<UserReview[]>>;
+  onFirstReview: (ccaName: string) => void;
+  userRepliesByReview: Record<number, UserReply[]>;
+  setUserRepliesByReview: React.Dispatch<
+    React.SetStateAction<Record<number, UserReply[]>>
+  >;
 }) {
   const [vis, setVis] = React.useState(false);
   React.useEffect(() => {
@@ -9485,9 +10536,9 @@ function CcaDetailPage({
   }, []);
 
   const [tab, setTab] = React.useState<DetailTab>("about");
-  const [threadReview, setThreadReview] = React.useState<
-    (typeof REVIEW_DATA)[0] | null
-  >(null);
+  const [threadReview, setThreadReview] = React.useState<UserReview | null>(
+    null,
+  );
   const [selectedDetailEvent, setSelectedDetailEvent] =
     React.useState<EventDetailData | null>(null);
 
@@ -9502,7 +10553,7 @@ function CcaDetailPage({
   const DETAIL_TABS: { id: DetailTab; label: string }[] = [
     { id: "about", label: "About" },
     { id: "events", label: "Events" },
-    { id: "reviews", label: `Reviews (${REVIEW_DATA.length})` },
+    { id: "reviews", label: `Reviews (${REVIEW_DATA.length + userReviews.length})` },
     { id: "home", label: "Contact" },
   ];
 
@@ -9592,8 +10643,12 @@ function CcaDetailPage({
         className="flex-1 overflow-y-auto"
         style={{ backgroundColor: CREAM, ...hideScroll }}
       >
-        {tab === "home" && <DetailHomeTab cca={cca} />}
-        {tab === "about" && <DetailAboutTab cca={cca} username={username} />}
+        {tab === "home" && (
+          <DetailHomeTab cca={cca} userMemberships={userMemberships} />
+        )}
+        {tab === "about" && (
+          <DetailAboutTab cca={cca} userMemberships={userMemberships} />
+        )}
         {tab === "events" && (
           <DetailEventsTab
             cca={cca}
@@ -9603,14 +10658,25 @@ function CcaDetailPage({
             setRemovedEvtKeys={setRemovedEvtKeys}
             onOpenEvent={setSelectedDetailEvent}
             onReminderChange={onReminderChange}
+            userMemberships={userMemberships}
+            events={detailEvents}
+            setEvents={setDetailEvents}
           />
         )}
         {tab === "reviews" && (
           <DetailReviewsTab
-            cca={cca}
             onOpenThread={setThreadReview}
             username={username}
-            isMember={userMemberships?.includes(cca.id) ?? false}
+            avatar={avatar}
+            initialPosition={
+              userMemberships?.includes(cca.id)
+                ? SSO_MEMBERSHIPS.find((m) => m.ccaId === cca.id)?.role
+                : ""
+            }
+            userReviews={userReviews}
+            setUserReviews={setUserReviews}
+            onFirstReview={() => onFirstReview(cca.name)}
+            userRepliesByReview={userRepliesByReview}
           />
         )}
       </div>
@@ -9620,6 +10686,33 @@ function CcaDetailPage({
         <EventDetailPage
           event={selectedDetailEvent}
           onBack={() => setSelectedDetailEvent(null)}
+          canEdit={isExcoForCca(cca.id, userMemberships)}
+          onSave={(updatedEvent) => {
+            if (updatedEvent.eventIndex === undefined) return;
+            setDetailEvents?.((items) =>
+              items.map((item, index) =>
+                index === updatedEvent.eventIndex
+                  ? {
+                      ...item,
+                      name: updatedEvent.title,
+                      date: updatedEvent.date,
+                      time: updatedEvent.time,
+                      venue: updatedEvent.venue,
+                      description: updatedEvent.description,
+                    }
+                  : item,
+              ),
+            );
+            setSelectedDetailEvent(updatedEvent);
+          }}
+          onCancel={() => {
+            if (selectedDetailEvent.eventIndex !== undefined) {
+              setDetailEvents?.((items) =>
+                items.filter((_, index) => index !== selectedDetailEvent.eventIndex),
+              );
+            }
+            setSelectedDetailEvent(null);
+          }}
         />
       )}
 
@@ -9628,6 +10721,17 @@ function CcaDetailPage({
         <ReviewThreadPage
           review={threadReview}
           onBack={() => setThreadReview(null)}
+          username={username}
+          avatar={avatar}
+          userReplies={userRepliesByReview[threadReview.id] ?? []}
+          setUserReplies={(update) =>
+            setUserRepliesByReview((prev) => {
+              const current = prev[threadReview.id] ?? [];
+              const next =
+                typeof update === "function" ? update(current) : update;
+              return { ...prev, [threadReview.id]: next };
+            })
+          }
         />
       )}
 
@@ -9685,7 +10789,16 @@ function MainApp({
   const [sheetCca, setSheetCca] = useState<CCA | null>(null);
   const [detailCca, setDetailCca] = useState<CCA | null>(null);
   const [detailCcaOrigin, setDetailCcaOrigin] = useState<Tab>("discover");
+  const [userReviewsByCca, setUserReviewsByCca] = useState<
+    Record<number, UserReview[]>
+  >({});
+  const [userRepliesByCca, setUserRepliesByCca] = useState<
+    Record<number, Record<number, UserReply[]>>
+  >({});
+  const hasPostedReviewRef = useRef(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] =
+    useState(false);
   const [showForYou, setShowForYou] = useState(false);
   const [notifiedDetailEvts, setNotifiedDetailEvts] = useState<Set<string>>(
     new Set(),
@@ -9693,6 +10806,16 @@ function MainApp({
   const [notifiedEvts, setNotifiedEvts] = useState<Set<number>>(new Set());
   const [removedEvtKeys, setRemovedEvtKeys] = useState<Set<string>>(new Set());
   const [keptEvtKeys, setKeptEvtKeys] = useState<Set<string>>(new Set());
+  const [detailEventsByCca, setDetailEventsByCca] = useState<
+    Record<number, CcaDetailEvent[]>
+  >(() =>
+    Object.fromEntries(
+      Object.entries(CCA_DETAIL_EVENTS).map(([ccaId, events]) => [
+        Number(ccaId),
+        events.map((event) => ({ ...event })),
+      ]),
+    ),
+  );
   const [notificationSettings, setNotificationSettings] =
     useState<NotificationSettings>({
       deadlines: false,
@@ -9713,6 +10836,21 @@ function MainApp({
   // Notification read state
   const [notifRead, setNotifRead] = useState<Set<number>>(new Set());
   const hasUnread = notificationItems.some((n) => !notifRead.has(n.id));
+  const handleFirstReview = (ccaName: string) => {
+    if (hasPostedReviewRef.current) return;
+    hasPostedReviewRef.current = true;
+    setNotificationItems((prev) => [
+      {
+        id: Date.now(),
+        type: "review-post",
+        ccaName,
+        body: "You posted your first review. Replies and grouped likes will appear here.",
+        time: "just now",
+        read: false,
+      },
+      ...prev,
+    ]);
+  };
   // Discover category navigation
   const [discoverKey, setDiscoverKey] = useState(0);
   const [discoverInitialCategory, setDiscoverInitialCategory] = useState("");
@@ -9881,6 +11019,7 @@ function MainApp({
             setKeptEvtKeys={setKeptEvtKeys}
             onReminderChange={handleReminderChange}
             onEventRemoved={handleEventRemoved}
+            detailEventsByCca={detailEventsByCca}
           />
         )}
         {tab === "profile" && (
@@ -10107,14 +11246,46 @@ function MainApp({
             saved={saved.has(detailCca.id)}
             onSave={() => handleSave(detailCca.id)}
             onBack={() => setDetailCca(null)}
-            onMainTabChange={(t) => setTab(t)}
+            onMainTabChange={(t) => {
+              setDetailCca(null);
+              setTab(t);
+            }}
             username={username}
+            avatar={avatar}
             notifiedDetailEvts={notifiedDetailEvts}
             setNotifiedDetailEvts={setNotifiedDetailEvts}
             userMemberships={userMemberships}
             removedEvtKeys={removedEvtKeys}
             setRemovedEvtKeys={setRemovedEvtKeys}
             onReminderChange={handleReminderChange}
+            detailEvents={detailEventsByCca[detailCca.id]}
+            setDetailEvents={(update) =>
+              setDetailEventsByCca((prev) => {
+                const current = prev[detailCca.id] ?? [];
+                const next =
+                  typeof update === "function" ? update(current) : update;
+                return { ...prev, [detailCca.id]: next };
+              })
+            }
+            userReviews={userReviewsByCca[detailCca.id] ?? []}
+            setUserReviews={(update) =>
+              setUserReviewsByCca((prev) => {
+                const current = prev[detailCca.id] ?? [];
+                const next =
+                  typeof update === "function" ? update(current) : update;
+                return { ...prev, [detailCca.id]: next };
+              })
+            }
+            onFirstReview={handleFirstReview}
+            userRepliesByReview={userRepliesByCca[detailCca.id] ?? {}}
+            setUserRepliesByReview={(update) =>
+              setUserRepliesByCca((prev) => {
+                const current = prev[detailCca.id] ?? {};
+                const next =
+                  typeof update === "function" ? update(current) : update;
+                return { ...prev, [detailCca.id]: next };
+              })
+            }
           />
         </div>
       )}
@@ -10135,9 +11306,17 @@ function MainApp({
       {showNotifications && (
         <NotificationsPage
           onBack={() => setShowNotifications(false)}
+          onOpenSettings={() => setShowNotificationSettings(true)}
           read={notifRead}
           setRead={setNotifRead}
           items={notificationItems}
+        />
+      )}
+      {showNotificationSettings && (
+        <NotificationSettingsPage
+          initialSettings={notificationSettings}
+          onSaveSettings={setNotificationSettings}
+          onBack={() => setShowNotificationSettings(false)}
         />
       )}
 
