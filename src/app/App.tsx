@@ -4190,7 +4190,7 @@ function AddToListSheet({
             <X size={14} color={PLUM} />
           </button>
           <p className="text-sm font-black" style={{ color: PLUM }}>
-            Add to List
+            Add to Sublist
           </p>
           <button
             onClick={() => setShowAddList(true)}
@@ -4205,86 +4205,35 @@ function AddToListSheet({
           className="overflow-y-auto"
           style={{ maxHeight: "52vh", ...hideScroll }}
         >
-          <p
-            className="text-xs font-black uppercase tracking-wider px-5 pt-4 pb-1.5"
-            style={{ color: MUTED }}
-          >
-            Default Lists
-          </p>
-          {lists
-            .filter((l) => l.id === "interested" || l.id === "currently-trying")
-            .map((l) => (
-              <button
-                key={l.id}
-                className="w-full flex items-center gap-3 px-5 py-3"
-                onClick={() => toggle(l.id)}
+          {lists.map((l) => (
+            <button
+              key={l.id}
+              className="w-full flex items-center gap-3 px-5 py-3"
+              onClick={() => toggle(l.id)}
+            >
+              <div
+                className="w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all"
+                style={{
+                  borderColor: l.ccaIds.has(cca.id) ? CORAL : BORDER,
+                  backgroundColor: l.ccaIds.has(cca.id)
+                    ? CORAL
+                    : "transparent",
+                }}
               >
-                <div
-                  className="w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all"
-                  style={{
-                    borderColor: l.ccaIds.has(cca.id) ? CORAL : BORDER,
-                    backgroundColor: l.ccaIds.has(cca.id)
-                      ? CORAL
-                      : "transparent",
-                  }}
-                >
-                  {l.ccaIds.has(cca.id) && (
-                    <Check size={11} color={FWHITE} strokeWidth={3} />
-                  )}
-                </div>
-                <span className="text-sm font-semibold" style={{ color: PLUM }}>
-                  {l.name}
-                </span>
-              </button>
-            ))}
-          {lists.filter(
-            (l) => l.id !== "interested" && l.id !== "currently-trying",
-          ).length > 0 && (
-            <>
-              <p
-                className="text-xs font-black uppercase tracking-wider px-5 pt-4 pb-1.5"
-                style={{ color: MUTED }}
-              >
-                My Lists
-              </p>
-              {lists
-                .filter(
-                  (l) => l.id !== "interested" && l.id !== "currently-trying",
-                )
-                .map((l) => (
-                  <button
-                    key={l.id}
-                    className="w-full flex items-center gap-3 px-5 py-3"
-                    onClick={() => toggle(l.id)}
-                  >
-                    <div
-                      className="w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all"
-                      style={{
-                        borderColor: l.ccaIds.has(cca.id) ? CORAL : BORDER,
-                        backgroundColor: l.ccaIds.has(cca.id)
-                          ? CORAL
-                          : "transparent",
-                      }}
-                    >
-                      {l.ccaIds.has(cca.id) && (
-                        <Check size={11} color={FWHITE} strokeWidth={3} />
-                      )}
-                    </div>
-                    <span
-                      className="text-sm font-semibold"
-                      style={{ color: PLUM }}
-                    >
-                      {l.name}
-                    </span>
-                  </button>
-                ))}
-            </>
-          )}
+                {l.ccaIds.has(cca.id) && (
+                  <Check size={11} color={FWHITE} strokeWidth={3} />
+                )}
+              </div>
+              <span className="text-sm font-semibold" style={{ color: PLUM }}>
+                {l.name}
+              </span>
+            </button>
+          ))}
           {lists.filter(
             (l) => l.id !== "interested" && l.id !== "currently-trying",
           ).length === 0 && (
-            <p className="px-5 pt-4 pb-2 text-xs" style={{ color: MUTED }}>
-              Tap + to create custom lists.
+            <p className="px-5 pt-2 pb-2 text-xs" style={{ color: MUTED }}>
+              Tap + to create Sublists
             </p>
           )}
         </div>
