@@ -36,6 +36,7 @@ import {
   Hand,
   SearchX,
   Funnel,
+  Cog,
 } from "lucide-react";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import noBgLogo from "@/imports/nobglogo.png";
@@ -1213,7 +1214,10 @@ const REVIEW_DATA = [
   },
 ];
 
-type UserReview = (typeof REVIEW_DATA)[number] & { isOwner?: boolean };
+type UserReview = (typeof REVIEW_DATA)[number] & {
+  isOwner?: boolean;
+  isDeleted?: boolean;
+};
 type UserReply = {
   id: number;
   user: string;
@@ -2822,7 +2826,7 @@ function OnboardNusScreen({
           className="w-full py-4 rounded-2xl font-black text-lg active:scale-[0.98] transition-transform"
           style={{ backgroundColor: CORAL, color: PLUM }}
         >
-          Looks right, continue
+          Continue
         </button>
       </div>
     </div>
@@ -6514,6 +6518,19 @@ function NotificationSettingsPage({
     setTimeout(() => setSavedBanner(false), 2000);
   };
 
+  const handleTurnOffAll = () => {
+    const allOff: NotificationSettings = {
+      deadlines: false,
+      newEvents: false,
+      wishlist: false,
+      reviewReply: false,
+    };
+    setSettings(allOff);
+    onSaveSettings(allOff);
+    setSavedBanner(true);
+    setTimeout(() => setSavedBanner(false), 2000);
+  };
+
   const Toggle = ({ on, onToggle }: { on: boolean; onToggle: () => void }) => (
     <button
       onClick={(e) => {
@@ -6649,6 +6666,13 @@ function NotificationSettingsPage({
           style={{ backgroundColor: CORAL, color: PLUM }}
         >
           Save Changes
+        </button>
+        <button
+          onClick={handleTurnOffAll}
+          className="w-full mt-3 text-xs font-bold active:opacity-60"
+          style={{ color: "#B91C1C" }}
+        >
+          Turn off all notifications
         </button>
       </div>
     </div>
@@ -7577,8 +7601,7 @@ function ProfileTab({
               className="text-sm leading-relaxed mb-6"
               style={{ color: MUTED }}
             >
-              You will be signed out of your account and returned to the welcome
-              screen.
+              Are you sure you want to sign out? You will need to log in again to access your account.
             </p>
             <div className="flex gap-3">
               <button
@@ -7646,11 +7669,13 @@ function ProfileTab({
 // ══════════════════════════════════════════════════════════════════════════════
 function NotificationsPage({
   onBack,
+  onOpenSettings,
   read,
   setRead,
   items = [],
 }: {
   onBack: () => void;
+  onOpenSettings: () => void;
   read: Set<number>;
   setRead: React.Dispatch<React.SetStateAction<Set<number>>>;
   items?: {
@@ -7682,6 +7707,11 @@ function NotificationsPage({
   const activeItems = activeTab === "updates" ? updateItems : reviewItems;
   const tabUnreadCount = activeItems.filter((n) => !read.has(n.id)).length;
   const unreadCount = updateItems.filter((n) => !read.has(n.id)).length;
+  const reviewUnreadCount = reviewItems.filter((n) => !read.has(n.id)).length;
+
+  React.useEffect(() => {
+    if (reviewUnreadCount > 0) setActiveTab("reviews");
+  }, [reviewUnreadCount]);
 
   const iconForType = (type: string) => {
     if (type === "deadline")
@@ -7720,6 +7750,14 @@ function NotificationsPage({
         <h1 className="flex-1 text-lg font-black" style={{ color: PLUM }}>
           Notifications
         </h1>
+        <button
+          onClick={onOpenSettings}
+          className="w-8 h-8 rounded-xl flex items-center justify-center active:opacity-60"
+          style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
+          aria-label="Notification settings"
+        >
+          <Cog size={15} color={PLUM} />
+        </button>
         {tabUnreadCount > 0 && (
           <button
             onClick={() => {
@@ -7768,7 +7806,7 @@ function NotificationsPage({
         {/* Reviews tab */}
         <button
           onClick={() => setActiveTab("reviews")}
-          className="relative px-1 pb-3"
+          className="relative flex items-center gap-1.5 px-1 pb-3"
         >
           <span
             className="text-sm font-black"
@@ -7776,6 +7814,14 @@ function NotificationsPage({
           >
             Reviews
           </span>
+          {reviewUnreadCount > 0 && (
+            <span
+              className="text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: CORAL, color: WHITE }}
+            >
+              {reviewUnreadCount}
+            </span>
+          )}
           {activeTab === "reviews" && (
             <span
               className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
@@ -8841,12 +8887,14 @@ function ReviewThreadPage({
   review,
   onBack,
   username,
+  avatar,
   userReplies,
   setUserReplies,
 }: {
   review: UserReview;
   onBack: () => void;
   username?: string;
+  avatar?: string;
   userReplies: UserReply[];
   setUserReplies: React.Dispatch<React.SetStateAction<UserReply[]>>;
 }) {
@@ -8956,6 +9004,7 @@ function ReviewThreadPage({
     text,
     onReport,
     isOwner = false,
+    isDeleted = false,
     small = false,
   }: {
     itemId: string;
@@ -8966,6 +9015,7 @@ function ReviewThreadPage({
     text: string;
     onReport: () => void;
     isOwner?: boolean;
+    isDeleted?: boolean;
     small?: boolean;
   }) => {
     const myVote = threadVotes[itemId] ?? 0;
@@ -8988,7 +9038,7 @@ function ReviewThreadPage({
             className={`${small ? "w-7 h-7 text-xs" : "w-8 h-8 text-sm"} rounded-full flex items-center justify-center font-black flex-shrink-0`}
             style={{ backgroundColor: CORAL, color: FWHITE }}
           >
-            {user[0].toUpperCase()}
+            {isOwner ? avatar ?? "🙂" : user[0].toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
@@ -9009,7 +9059,7 @@ function ReviewThreadPage({
               {year}
             </p>
           </div>
-          {!isOwner && (
+          {!isOwner && !isDeleted && (
             <button onClick={onReport} className="flex-shrink-0 opacity-50">
               <Flag size={12} color={MUTED} />
             </button>
@@ -9178,6 +9228,7 @@ function ReviewThreadPage({
           upvotes={review.upvotes}
           text={review.text}
           onReport={() => setReportId(review.id)}
+          isDeleted={review.isDeleted}
         />
 
         {/* Replies with indent + vertical connecting line */}
@@ -9328,6 +9379,7 @@ function ReviewThreadPage({
 function DetailReviewsTab({
   onOpenThread,
   username,
+  avatar,
   isMember,
   userReviews,
   setUserReviews,
@@ -9336,6 +9388,7 @@ function DetailReviewsTab({
 }: {
   onOpenThread: (r: UserReview) => void;
   username?: string;
+  avatar?: string;
   isMember?: boolean;
   userReviews: UserReview[];
   setUserReviews: React.Dispatch<React.SetStateAction<UserReview[]>>;
@@ -9373,7 +9426,7 @@ function DetailReviewsTab({
     const review = {
       id: Date.now(),
       user: username ?? "you",
-      year: anonymous ? "Anonymous" : position.trim() || "AY25/26 Member",
+      year: anonymous ? "" : position.trim(),
       isExco: false,
       upvotes: 0,
       replies: 0,
@@ -9391,7 +9444,25 @@ function DetailReviewsTab({
   };
 
   const handleDelete = (id: number) => {
-    setUserReviews((prev) => prev.filter((review) => review.id !== id));
+    const hasReplies =
+      (REVIEW_THREADS[id] ?? []).length +
+        (userRepliesByReview[id] ?? []).length >
+      0;
+    setUserReviews((prev) =>
+      hasReplies
+        ? prev.map((review) =>
+            review.id === id
+              ? {
+                  ...review,
+                  user: "Deleted review",
+                  year: "",
+                  text: "This review has been deleted.",
+                  isDeleted: true,
+                }
+              : review,
+          )
+        : prev.filter((review) => review.id !== id),
+    );
     if (editingReviewId === id) {
       setEditingReviewId(null);
       setEditReviewText("");
@@ -9525,12 +9596,20 @@ function DetailReviewsTab({
               }}
             >
               <div className="flex items-center gap-2.5 px-3.5 pt-3.5 pb-2">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0"
-                  style={{ backgroundColor: CORAL, color: FWHITE }}
-                >
-                  {r.user[0].toUpperCase()}
-                </div>
+                {r.isOwner ? (
+                  <AvatarCircle
+                    av={avatar ?? "🙂"}
+                    size="w-8 h-8"
+                    textSize="text-sm"
+                  />
+                ) : (
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0"
+                    style={{ backgroundColor: CORAL, color: FWHITE }}
+                  >
+                    {r.user[0].toUpperCase()}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <p
@@ -9550,7 +9629,7 @@ function DetailReviewsTab({
                     {r.year}
                   </p>
                 </div>
-                {!r.isOwner && (
+                {!r.isOwner && !r.isDeleted && (
                   <button
                     onClick={() => setReportId(r.id)}
                     className="flex-shrink-0 opacity-60"
@@ -9641,7 +9720,7 @@ function DetailReviewsTab({
                     color={vote === -1 ? "#B91C1C" : MUTED}
                   />
                 </button>
-                {r.isOwner && (
+                {r.isOwner && !r.isDeleted && (
                   <div className="ml-auto flex items-center gap-2">
                     {editingReviewId === r.id ? (
                       <>
@@ -9707,7 +9786,7 @@ function DetailReviewsTab({
               Delete review?
             </h2>
             <p className="text-sm leading-relaxed mb-6" style={{ color: MUTED }}>
-              Are you sure you want to delete your review? This cannot be undone.
+              Your review text will be removed, but existing replies will remain visible.
             </p>
             <div className="flex gap-3">
               <button
@@ -9748,6 +9827,7 @@ function CcaDetailPage({
   onBack,
   onMainTabChange,
   username,
+  avatar,
   notifiedDetailEvts,
   setNotifiedDetailEvts,
   userMemberships,
@@ -9766,6 +9846,7 @@ function CcaDetailPage({
   onBack: () => void;
   onMainTabChange: (t: Tab) => void;
   username?: string;
+  avatar?: string;
   notifiedDetailEvts?: Set<string>;
   setNotifiedDetailEvts?: React.Dispatch<React.SetStateAction<Set<string>>>;
   userMemberships?: number[];
@@ -9911,6 +9992,7 @@ function CcaDetailPage({
           <DetailReviewsTab
             onOpenThread={setThreadReview}
             username={username}
+            avatar={avatar}
             isMember={userMemberships?.includes(cca.id) ?? false}
             userReviews={userReviews}
             setUserReviews={setUserReviews}
@@ -9934,6 +10016,7 @@ function CcaDetailPage({
           review={threadReview}
           onBack={() => setThreadReview(null)}
           username={username}
+          avatar={avatar}
           userReplies={userRepliesByReview[threadReview.id] ?? []}
           setUserReplies={(update) =>
             setUserRepliesByReview((prev) => {
@@ -10008,6 +10091,8 @@ function MainApp({
   >({});
   const hasPostedReviewRef = useRef(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] =
+    useState(false);
   const [showForYou, setShowForYou] = useState(false);
   const [notifiedDetailEvts, setNotifiedDetailEvts] = useState<Set<string>>(
     new Set(),
@@ -10444,8 +10529,12 @@ function MainApp({
             saved={saved.has(detailCca.id)}
             onSave={() => handleSave(detailCca.id)}
             onBack={() => setDetailCca(null)}
-            onMainTabChange={(t) => setTab(t)}
+            onMainTabChange={(t) => {
+              setDetailCca(null);
+              setTab(t);
+            }}
             username={username}
+            avatar={avatar}
             notifiedDetailEvts={notifiedDetailEvts}
             setNotifiedDetailEvts={setNotifiedDetailEvts}
             userMemberships={userMemberships}
@@ -10491,9 +10580,17 @@ function MainApp({
       {showNotifications && (
         <NotificationsPage
           onBack={() => setShowNotifications(false)}
+          onOpenSettings={() => setShowNotificationSettings(true)}
           read={notifRead}
           setRead={setNotifRead}
           items={notificationItems}
+        />
+      )}
+      {showNotificationSettings && (
+        <NotificationSettingsPage
+          initialSettings={notificationSettings}
+          onSaveSettings={setNotificationSettings}
+          onBack={() => setShowNotificationSettings(false)}
         />
       )}
 
