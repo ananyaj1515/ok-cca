@@ -1887,6 +1887,179 @@ function CollapsingItem({
   );
 }
 
+const SWIPE_REMOVE_W = 88;
+const SWIPE_DANGER = "#E85D4C"; // coral-red action tray
+const SWIPE_RADIUS = 12; // matches Tailwind rounded-xl
+
+function SwipeToRemove({
+  children,
+  onRemove,
+  revealed,
+  onRevealedChange,
+  onSwipeStart,
+  borderColor = BORDER,
+}: {
+  children: React.ReactNode;
+  onRemove: () => void;
+  revealed: boolean;
+  onRevealedChange: (open: boolean) => void;
+  onSwipeStart?: () => void;
+  borderColor?: string;
+}) {
+  const offsetRef = React.useRef(0);
+  const startXRef = React.useRef(0);
+  const startYRef = React.useRef(0);
+  const startOffRef = React.useRef(0);
+  const axisRef = React.useRef<"undecided" | "x" | "y">("undecided");
+  const draggingRef = React.useRef(false);
+  const movedRef = React.useRef(false);
+  const [offset, setOffset] = React.useState(0);
+  const [dragging, setDragging] = React.useState(false);
+
+  const setOff = (v: number) => {
+    offsetRef.current = v;
+    setOffset(v);
+  };
+
+  React.useEffect(() => {
+    if (dragging) return;
+    setOff(revealed ? -SWIPE_REMOVE_W : 0);
+  }, [revealed, dragging]);
+
+  const finish = () => {
+    if (axisRef.current !== "x") return;
+    axisRef.current = "undecided";
+    const x = offsetRef.current;
+    draggingRef.current = false;
+    setDragging(false);
+    const shouldReveal = x < -SWIPE_REMOVE_W * 0.45;
+    const shouldConfirm = x < -SWIPE_REMOVE_W - 12;
+    if (shouldReveal) {
+      setOff(-SWIPE_REMOVE_W);
+      onRevealedChange(true);
+      if (shouldConfirm) onRemove();
+    } else {
+      setOff(0);
+      onRevealedChange(false);
+    }
+  };
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    draggingRef.current = true;
+    axisRef.current = "undecided";
+    movedRef.current = false;
+    startXRef.current = e.clientX;
+    startYRef.current = e.clientY;
+    startOffRef.current = offsetRef.current;
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!draggingRef.current) return;
+    const dx = e.clientX - startXRef.current;
+    const dy = e.clientY - startYRef.current;
+    if (axisRef.current === "undecided") {
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        axisRef.current = "x";
+        setDragging(true);
+        onSwipeStart?.();
+        try {
+          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        } catch {
+          /* ignore */
+        }
+      } else {
+        axisRef.current = "y";
+        draggingRef.current = false;
+        return;
+      }
+    }
+    if (axisRef.current !== "x") return;
+    movedRef.current = true;
+    const next = Math.min(
+      12,
+      Math.max(startOffRef.current + dx, -SWIPE_REMOVE_W - 28),
+    );
+    setOff(next);
+  };
+
+  const onPointerUp = () => {
+    if (axisRef.current === "x") finish();
+    else {
+      draggingRef.current = false;
+      setDragging(false);
+    }
+  };
+
+  return (
+    <div
+      className="relative overflow-hidden"
+      style={{
+        borderRadius: SWIPE_RADIUS,
+        border: `1.5px solid ${borderColor}`,
+      }}
+    >
+      {/* Background action tray — sits behind the card, shared outer radius */}
+      <button
+        type="button"
+        aria-label="Remove event"
+        className="absolute inset-y-0 right-0 z-0 flex flex-col items-center justify-center"
+        style={{
+          width: SWIPE_REMOVE_W,
+          backgroundColor: SWIPE_DANGER,
+          gap: 3,
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRevealedChange(true);
+          onRemove();
+        }}
+      >
+        <Trash2 size={18} color={FWHITE} strokeWidth={2} />
+        <span
+          className="text-[9px] font-bold leading-none"
+          style={{ color: FWHITE }}
+        >
+          Remove
+        </span>
+      </button>
+
+      {/* Foreground card — slides over the tray; right edge goes flush while open */}
+      <div
+        className="relative z-[1]"
+        style={{
+          transform: `translateX(${offset}px)`,
+          transition: dragging ? "none" : "transform 0.22s ease-out",
+          touchAction: "pan-y",
+          userSelect: dragging ? "none" : undefined,
+          WebkitUserSelect: dragging ? "none" : undefined,
+        }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onLostPointerCapture={onPointerUp}
+        onClickCapture={(e) => {
+          if (movedRef.current) {
+            e.stopPropagation();
+            e.preventDefault();
+            movedRef.current = false;
+            return;
+          }
+          if (revealed) {
+            onRevealedChange(false);
+            e.stopPropagation();
+            e.preventDefault();
+          }
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function withExitingItems<T>(
   live: T[],
   exiting: { item: T; index: number }[],
@@ -4945,7 +5118,7 @@ function EventsTab({
   const [filterCcaIds, setFilterCcaIds] = useState<Set<number>>(new Set());
   const [upcomingOpen, setUpcomingOpen] = useState(true);
   const [pastOpen, setPastOpen] = useState(false);
-  const [menuEvtKey, setMenuEvtKey] = useState<string | null>(null);
+  const [swipedEvtKey, setSwipedEvtKey] = useState<string | null>(null);
   const [removeConfirm, setRemoveConfirm] = useState<{
     id: number;
     title: string;
@@ -5231,6 +5404,16 @@ function EventsTab({
     setSelIdx(weekOffset === 0 ? (TODAY.getDay() + 6) % 7 : 0);
   }, [weekOffset]);
 
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      if (!removeConfirm) setSwipedEvtKey(null);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [removeConfirm]);
+
   const goToToday = () => {
     setWeekOffset(0);
     setSelIdx((TODAY.getDay() + 6) % 7);
@@ -5332,24 +5515,30 @@ function EventsTab({
     const highlighted = highlightedEvtIds.has(ev.id);
     return (
       <CollapsingItem key={ev.id} exiting={exiting}>
-        <div className="relative">
+        <SwipeToRemove
+          revealed={swipedEvtKey === evKey}
+          onRevealedChange={(open) => setSwipedEvtKey(open ? evKey : null)}
+          onSwipeStart={() => {
+            if (swipedEvtKey !== evKey) setSwipedEvtKey(null);
+          }}
+          onRemove={() => setRemoveConfirm({ id: ev.id, title: ev.title })}
+          borderColor={
+            highlighted ? (isDark ? "#991B1B" : "#FECACA") : BORDER
+          }
+        >
           <div
             ref={(el) => {
               if (el) eventRefs.current.set(ev.id, el);
               else eventRefs.current.delete(ev.id);
             }}
-            className="rounded-xl p-4 flex gap-3 items-center cursor-pointer active:opacity-80"
+            className="p-4 flex gap-3 items-center cursor-pointer"
             style={{
               backgroundColor: highlighted
                 ? isDark
                   ? "rgba(127, 29, 29, 0.40)"
                   : "#FEE2E2"
                 : WHITE,
-              border: `1.5px solid ${
-                highlighted ? (isDark ? "#991B1B" : "#FECACA") : BORDER
-              }`,
-              transition:
-                "background-color 0.25s ease, border-color 0.25s ease, opacity 0.15s ease",
+              transition: "background-color 0.25s ease",
             }}
             onClick={() =>
               setSelectedEvent({
@@ -5430,21 +5619,8 @@ function EventsTab({
                 <Bell size={15} color={PLUM} />
               )}
             </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setMenuEvtKey(menuEvtKey === evKey ? null : evKey);
-              }}
-              className="w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0"
-              style={{
-                backgroundColor:
-                  menuEvtKey === evKey ? PLUM_SOFT : "transparent",
-              }}
-            >
-              <MoreVertical size={15} color={MUTED} />
-            </button>
           </div>
-        </div>
+        </SwipeToRemove>
       </CollapsingItem>
     );
   };
@@ -5690,61 +5866,15 @@ function EventsTab({
         </div>
       </div>
 
-      {/* Event options action sheet */}
-      {menuEvtKey !== null && (
-        <div
-          className="absolute inset-0 z-[75] flex flex-col justify-end"
-          style={{ backgroundColor: "rgba(0,0,0,0.35)" }}
-          onClick={() => setMenuEvtKey(null)}
-        >
-          <div
-            className="rounded-t-3xl overflow-hidden pb-8"
-            style={{ backgroundColor: WHITE }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              className="px-4 pt-4 pb-3"
-              style={{ borderBottom: `1px solid ${BORDER}` }}
-            >
-              <div
-                className="w-10 h-1 rounded-full mx-auto mb-3"
-                style={{ backgroundColor: BORDER }}
-              />
-              <p
-                className="text-xs font-bold text-center"
-                style={{ color: MUTED }}
-              >
-                Event Options
-              </p>
-            </div>
-            <button
-              className="w-full flex items-center gap-3 px-5 py-4 active:opacity-70"
-              onClick={() => {
-                const ev = allVisibleEvents.find(
-                  (e) => String(e.id) === menuEvtKey,
-                );
-                if (ev) setRemoveConfirm({ id: ev.id, title: ev.title });
-                setMenuEvtKey(null);
-              }}
-            >
-              <Trash2 size={16} color="#B91C1C" />
-              <span
-                className="text-sm font-semibold"
-                style={{ color: "#B91C1C" }}
-              >
-                Remove Event
-              </span>
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Remove confirmation modal */}
       {removeConfirm && (
         <div
           className="absolute inset-0 z-[80] flex items-center justify-center px-6"
           style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
-          onClick={() => setRemoveConfirm(null)}
+          onClick={() => {
+            setRemoveConfirm(null);
+            setSwipedEvtKey(null);
+          }}
         >
           <div
             className="w-full rounded-3xl p-6"
@@ -5792,7 +5922,10 @@ function EventsTab({
             </p>
             <div className="flex gap-3">
               <button
-                onClick={() => setRemoveConfirm(null)}
+                onClick={() => {
+                  setRemoveConfirm(null);
+                  setSwipedEvtKey(null);
+                }}
                 className="flex-1 py-3 rounded-2xl text-sm font-black"
                 style={{
                   backgroundColor: isDark ? "rgba(255,255,255,0.08)" : CREAM,
@@ -5805,6 +5938,7 @@ function EventsTab({
                 onClick={() => {
                   handleRemove(removeConfirm.id);
                   setRemoveConfirm(null);
+                  setSwipedEvtKey(null);
                 }}
                 className="flex-1 py-3 rounded-2xl text-sm font-black"
                 style={{ backgroundColor: "#B91C1C", color: FWHITE }}
