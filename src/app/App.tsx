@@ -1127,7 +1127,6 @@ function WelcomeScreen({ onGetStarted }: { onGetStarted: () => void }) {
 
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: CREAM }}>
-
       {/* Logo */}
       <div className="px-6 pt-14 pb-1 flex items-center gap-3">
         <ImageWithFallback
@@ -1184,7 +1183,11 @@ function WelcomeScreen({ onGetStarted }: { onGetStarted: () => void }) {
             disabled={slide === 0}
             aria-label="Previous preview"
             className="absolute left-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center transition-opacity z-10 shadow-sm"
-            style={{ backgroundColor: WHITE, border:`1.5px solid ${CORAL}`, opacity: slide > 0 ? 1 : 0.35 }}
+            style={{
+              backgroundColor: WHITE,
+              border: `1.5px solid ${CORAL}`,
+              opacity: slide > 0 ? 1 : 0.35,
+            }}
           >
             <ChevronLeft size={14} strokeWidth={2.5} color={CORAL} />
           </button>
@@ -1194,7 +1197,7 @@ function WelcomeScreen({ onGetStarted }: { onGetStarted: () => void }) {
             onClick={() => setSlide((s) => (s + 1) % SLIDES.length)}
             aria-label="Next preview"
             className="absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center z-10 shadow-sm"
-            style={{ backgroundColor: WHITE, border:`1.5px solid ${CORAL}` }}
+            style={{ backgroundColor: WHITE, border: `1.5px solid ${CORAL}` }}
           >
             <ChevronRight size={14} strokeWidth={2.5} color={CORAL} />
           </button>
@@ -1237,26 +1240,47 @@ function WelcomeScreen({ onGetStarted }: { onGetStarted: () => void }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // SCREEN: Account type
 // ══════════════════════════════════════════════════════════════════════════════
-function AccountTypeScreen({ onNewUser, onReturning, onBack }: {
+function AccountTypeScreen({
+  onNewUser,
+  onReturning,
+  onBack,
+}: {
   onNewUser: () => void;
   onReturning: () => void;
   onBack: () => void;
 }) {
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: CREAM }}>
-      <div className="px-5 pt-14"><BackBtn onPress={onBack} /></div>
+      <div className="px-5 pt-14">
+        <BackBtn onPress={onBack} />
+      </div>
       <div className="flex-1 flex flex-col justify-center px-6">
         <div className="mb-8">
           <h1 className="text-2xl font-black mb-2" style={{ color: PLUM }}>
-            Welcome to <span style={{ color: PLUM }}>ok!</span><span style={{ color: CORAL }}>cca</span>
+            Welcome to <span style={{ color: PLUM }}>ok!</span>
+            <span style={{ color: CORAL }}>cca</span>
           </h1>
-          <p className="text-sm leading-relaxed" style={{ color: MUTED }}>Let’s get you to the right place.</p>
+          <p className="text-sm leading-relaxed" style={{ color: MUTED }}>
+            Let’s get you to the right place.
+          </p>
         </div>
         <div className="space-y-3">
-          <button onClick={onNewUser} className="w-full rounded-2xl px-4 py-4 text-left font-black" style={{ backgroundColor: CORAL, color: PLUM }}>
+          <button
+            onClick={onNewUser}
+            className="w-full rounded-2xl px-4 py-4 text-left font-black"
+            style={{ backgroundColor: CORAL, color: PLUM }}
+          >
             Set up a new account
           </button>
-          <button onClick={onReturning} className="w-full rounded-2xl px-4 py-4 text-left font-black" style={{ backgroundColor: WHITE, color: PLUM, border:`1.5px solid ${BORDER}` }}>
+          <button
+            onClick={onReturning}
+            className="w-full rounded-2xl px-4 py-4 text-left font-black"
+            style={{
+              backgroundColor: WHITE,
+              color: PLUM,
+              border: `1.5px solid ${BORDER}`,
+            }}
+          >
             Sign in to existing account
           </button>
         </div>
@@ -1851,14 +1875,12 @@ function OnboardProfileScreen({
         <ProgressStrip step={2} />
       </div>
 
-
-
       <div className="flex-1 px-6 overflow-y-auto" style={hideScroll}>
         <h2 className="text-2xl font-black mb-4" style={{ color: PLUM }}>
           Create your profile
         </h2>
 
-         <div
+        <div
           className="flex items-center gap-3 rounded-2xl p-3.5 mb-4"
           style={{ backgroundColor: LIGHT_MINT }}
         >
@@ -1869,11 +1891,10 @@ function OnboardProfileScreen({
             <User size={14} color={PLUM} />
           </div>
           <p className="text-xs leading-relaxed flex-1" style={{ color: PLUM }}>
-            Other students see your avatar and username. Your NUS identity
-            stays private.
+            Other students see your avatar and username. Your NUS identity stays
+            private.
           </p>
         </div>
-
 
         {/* Avatar picker */}
         <p
@@ -1952,8 +1973,6 @@ function OnboardProfileScreen({
             </div>
           </div>
         </div>
-
-
       </div>
 
       <div className="px-6 pb-10 pt-3">
@@ -2137,54 +2156,74 @@ function HomeTab({
         </div>
         <div className="space-y-2.5">
           {upcomingEvents.length === 0 ? (
-            <div className="rounded-xl p-4 text-center" style={{ backgroundColor: WHITE, border: `1.5px solid ${BORDER}` }}>
-              <Calendar size={24} className="mx-auto mb-2" color={CORAL} strokeWidth={1.8} />
-              <p className="text-sm font-black mb-1" style={{ color: PLUM }}>No upcoming events</p>
-              <p className="text-xs leading-relaxed mb-3" style={{ color: MUTED }}>Discover CCAs and add them to your Wishlist to see upcoming events.</p>
-              
-            </div>
-          ) : upcomingEvents.map((ev) => (
             <div
-              key={ev.id}
-              className="rounded-xl p-3.5 flex items-center gap-3 shadow-md"
+              className="rounded-xl p-4 text-center"
               style={{
                 backgroundColor: WHITE,
                 border: `1.5px solid ${BORDER}`,
               }}
             >
-              <div
-                className="w-12 h-12 rounded-xl flex flex-col items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: LIGHT_CORAL }}
+              <Calendar
+                size={24}
+                className="mx-auto mb-2"
+                color={CORAL}
+                strokeWidth={1.8}
+              />
+              <p className="text-sm font-black mb-1" style={{ color: PLUM }}>
+                No upcoming events
+              </p>
+              <p
+                className="text-xs leading-relaxed mb-3"
+                style={{ color: MUTED }}
               >
-                <p
-                  className="text-[8px] font-black uppercase tracking-wide"
-                  style={{ color: CORAL }}
-                >
-                  {ev.date.split(" ")[0]}
-                </p>
-                <p
-                  className="text-base font-black leading-tight"
-                  style={{ color: PLUM }}
-                >
-                  {ev.date.split(" ")[1]}
-                </p>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p
-                  className="text-xs font-bold truncate"
-                  style={{ color: PLUM }}
-                >
-                  {ev.ccaName}
-                </p>
-                <p className="text-xs truncate" style={{ color: MUTED }}>
-                  {ev.title} · {ev.time}
-                </p>
-                <p className="text-xs truncate" style={{ color: MUTED }}>
-                  {ev.location}
-                </p>
-              </div>
+                Discover CCAs and add them to your Wishlist to see upcoming
+                events.
+              </p>
             </div>
-          ))}
+          ) : (
+            upcomingEvents.map((ev) => (
+              <div
+                key={ev.id}
+                className="rounded-xl p-3.5 flex items-center gap-3 shadow-md"
+                style={{
+                  backgroundColor: WHITE,
+                  border: `1.5px solid ${BORDER}`,
+                }}
+              >
+                <div
+                  className="w-12 h-12 rounded-xl flex flex-col items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: LIGHT_CORAL }}
+                >
+                  <p
+                    className="text-[8px] font-black uppercase tracking-wide"
+                    style={{ color: CORAL }}
+                  >
+                    {ev.date.split(" ")[0]}
+                  </p>
+                  <p
+                    className="text-base font-black leading-tight"
+                    style={{ color: PLUM }}
+                  >
+                    {ev.date.split(" ")[1]}
+                  </p>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p
+                    className="text-xs font-bold truncate"
+                    style={{ color: PLUM }}
+                  >
+                    {ev.ccaName}
+                  </p>
+                  <p className="text-xs truncate" style={{ color: MUTED }}>
+                    {ev.title} · {ev.time}
+                  </p>
+                  <p className="text-xs truncate" style={{ color: MUTED }}>
+                    {ev.location}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
@@ -4511,7 +4550,7 @@ function EventsTab({
                     className="text-sm font-bold text-center"
                     style={{ color: MUTED }}
                   >
-                    Go to Discover to explore Events
+                    Add CCAs to Wishlist or Ring the Events Bell
                   </p>
                   <button
                     onClick={() => onTabChange?.("discover")}
@@ -5527,7 +5566,6 @@ function ManageAccountPage({
               onPress={() => setShowNotifSettings(true)}
               right={
                 <div className="flex items-center gap-1.5">
-                 
                   <ChevronRight size={15} color={MUTED} />
                 </div>
               }
@@ -5889,6 +5927,7 @@ function ProfileTab({
 }) {
   const [showManage, setShowManage] = React.useState(false);
   const [showRefine, setShowRefine] = React.useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = React.useState(false);
 
   const memberships =
     userMemberships && userMemberships.length > 0
@@ -6063,7 +6102,7 @@ function ProfileTab({
         {/* Sign Out */}
         <div className="px-5 pb-8">
           <button
-            onClick={onSignOut}
+            onClick={() => setShowSignOutConfirm(true)}
             className="w-full py-4 rounded-2xl font-black text-sm active:scale-[0.98] transition-transform"
             style={{
               backgroundColor: WHITE,
@@ -6075,6 +6114,59 @@ function ProfileTab({
           </button>
         </div>
       </div>
+
+      {/* Sign Out confirmation modal */}
+      {showSignOutConfirm && (
+        <div
+          className="absolute inset-0 z-[80] flex items-center justify-center px-6"
+          style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
+          onClick={() => setShowSignOutConfirm(false)}
+        >
+          <div
+            className="w-full rounded-3xl p-6"
+            style={{ backgroundColor: WHITE, maxWidth: "340px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-black mb-2" style={{ color: PLUM }}>
+              Sign Out?
+            </h2>
+            <p
+              className="text-sm leading-relaxed mb-6"
+              style={{ color: MUTED }}
+            >
+              You will be signed out of your account and returned to the welcome
+              screen.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSignOutConfirm(false)}
+                className="flex-1 py-3.5 rounded-2xl text-sm font-black"
+                style={{
+                  backgroundColor: CREAM,
+                  border: `1.5px solid ${BORDER}`,
+                  color: PLUM,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowSignOutConfirm(false);
+                  onSignOut();
+                }}
+                className="flex-1 py-3.5 rounded-2xl text-sm font-black"
+                style={{
+                  backgroundColor: DANGER_BG,
+                  color: "#B91C1C",
+                  border: "1.5px solid #EF9797",
+                }}
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Manage Account overlay */}
       {showManage && (
@@ -8680,8 +8772,14 @@ export default function App() {
           )}
           {screen === "account-type" && (
             <AccountTypeScreen
-              onNewUser={() => { setIsReturning(false); setScreen("signin"); }}
-              onReturning={() => { setIsReturning(true); setScreen("signin"); }}
+              onNewUser={() => {
+                setIsReturning(false);
+                setScreen("signin");
+              }}
+              onReturning={() => {
+                setIsReturning(true);
+                setScreen("signin");
+              }}
               onBack={() => setScreen("welcome")}
             />
           )}
