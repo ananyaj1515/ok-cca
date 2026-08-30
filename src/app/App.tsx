@@ -5294,6 +5294,17 @@ function EventsTab({
   const allVisibleEvents = React.useMemo(() => {
     const evs = [...visibleEvents];
     const seen = new Set(evs.map((e) => e.id));
+    const eventFingerprint = (ccaId: number, title: string, date: string) =>
+      `${ccaId}|${title.trim().toLowerCase()}|${date}`;
+    const occupied = new Set(
+      evs.map((e) => eventFingerprint(e.ccaId, e.title, e.date)),
+    );
+    // If a matching EVENTS-list card was removed, don't re-add the CCA-detail copy
+    EVENTS.forEach((e) => {
+      if (removedEvtKeys.has(String(e.id))) {
+        occupied.add(eventFingerprint(e.ccaId, e.title, e.date));
+      }
+    });
     const addDetail = (ccaId: number, idx: number) => {
       const id = -(ccaId * 100 + idx);
       const evKey = String(id);
@@ -5301,16 +5312,23 @@ function EventsTab({
       const cca = CCAS.find((c) => c.id === ccaId);
       const ev = detailEventsByCca[ccaId]?.[idx];
       if (!ev || !cca) return;
+      const date = ev.date.replace(/(\d+) (\w+) \d+/, "$2 $1");
+      const fp = eventFingerprint(ccaId, ev.name, date);
+      if (occupied.has(fp)) return;
+      const match = EVENTS.find(
+        (e) => eventFingerprint(e.ccaId, e.title, e.date) === fp,
+      );
       seen.add(id);
+      occupied.add(fp);
       evs.push({
         id,
         ccaId,
         ccaName: cca.name,
         title: ev.name,
-        date: ev.date.replace(/(\d+) (\w+) \d+/, "$2 $1"),
+        date,
         dayLabel: "",
         time: ev.time,
-        location: "",
+        location: ev.venue || match?.location || "",
       });
     };
     if (notifiedDetailEvts) {
@@ -5330,6 +5348,13 @@ function EventsTab({
           addDetail(ccaId, -id % 100);
         }
       });
+      // Wishlisted CCAs: surface every event from the CCA profile calendar
+      saved.forEach((ccaId) => {
+        if (filterCcaIds.size > 0 && !filterCcaIds.has(ccaId)) return;
+        const list = detailEventsByCca[ccaId];
+        if (!list) return;
+        list.forEach((_, idx) => addDetail(ccaId, idx));
+      });
     }
     return evs;
   }, [
@@ -5340,6 +5365,7 @@ function EventsTab({
     filterNotified,
     filterCcaIds,
     detailEventsByCca,
+    saved,
   ]);
 
   // Sort all events by date ascending
