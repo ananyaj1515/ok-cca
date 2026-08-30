@@ -5576,9 +5576,9 @@ function EventsTab({
               <p className="text-sm font-black mb-1.5" style={{ color: PLUM }}>
                 {ev.title}
               </p>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <span
-                  className="flex items-center gap-1 text-xs"
+                  className="flex items-center gap-1 text-xs flex-shrink-0 whitespace-nowrap"
                   style={{ color: MUTED }}
                 >
                   <Clock size={10} />
@@ -5586,11 +5586,11 @@ function EventsTab({
                 </span>
                 {ev.location && (
                   <span
-                    className="flex items-center gap-1 text-xs"
+                    className="flex items-center gap-1 text-xs min-w-0 overflow-hidden"
                     style={{ color: MUTED }}
                   >
-                    <MapPin size={10} />
-                    {ev.location}
+                    <MapPin size={10} className="flex-shrink-0" />
+                    <span className="truncate">{ev.location}</span>
                   </span>
                 )}
               </div>
