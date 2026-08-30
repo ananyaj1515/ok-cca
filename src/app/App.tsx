@@ -5146,7 +5146,7 @@ function EventsTab({
       : `${MON_SHORT[a.getMonth()]} – ${MON_SHORT[b.getMonth()]} ${a.getFullYear()}`;
   }, [weekDays]);
 
-  // Scroll to a specific event card by id
+  // Scroll to a specific event card by id (fully below sticky section headers)
   const scrollToEvent = (evId: number) => {
     const el = eventRefs.current.get(evId);
     if (!el || !scrollRef.current) return;
@@ -5155,7 +5155,15 @@ function EventsTab({
       el.getBoundingClientRect().top -
       container.getBoundingClientRect().top +
       container.scrollTop;
-    container.scrollTo({ top: elTop - 8, behavior: "smooth" });
+    // Sticky Upcoming/Past headers sit at top:0 — offset so the card clears them
+    let stickyH = 0;
+    container.querySelectorAll<HTMLElement>(".sticky").forEach((h) => {
+      if (h.parentElement?.contains(el)) stickyH = h.offsetHeight;
+    });
+    container.scrollTo({
+      top: Math.max(0, elTop - stickyH - 8),
+      behavior: "smooth",
+    });
   };
 
   // When user taps a calendar day: exact-date match → scroll + 3s highlight; else brief toast
